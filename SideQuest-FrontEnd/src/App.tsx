@@ -1,12 +1,15 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Cadastro from './Cadastro';
+import Projetos from './Projetos';
+import Layout from './Layout';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<Layout />} />
         <Route path="/cadastro" element={<Cadastro />} />
-        {/* Outras rotas aqui */}
+        <Route path="/projetos" element={<Projetos/>} />
       </Routes>
     </BrowserRouter>
   );
