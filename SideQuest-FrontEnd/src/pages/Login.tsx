@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import LoginForm from '../components/LoginForm';
-import SignupForm from '../components/SignupForm';
+// import SignupForm from '../components/SignupForm';
 import AuthToggle from '../components/AuthToggle';
-import '../components/LoginForm.css';
 
 const Login: React.FC = () => {
   const [active, setActive] = useState(false);
@@ -11,9 +10,9 @@ const Login: React.FC = () => {
     console.log('Login submitted:', loginData);
   };
 
-  const handleSignupSubmit = (signupData: { name: string; email: string; password: string }) => {
-    console.log('Signup submitted:', signupData);
-  };
+  // const handleSignupSubmit = (signupData: { name: string; email: string; password: string }) => {
+  //   console.log('Signup submitted:', signupData);
+  // };
 
   const toggleToLogin = () => setActive(false);
   const toggleToSignup = () => setActive(true);
@@ -23,7 +22,7 @@ const Login: React.FC = () => {
       style={{ minHeight: '100vh', width: '100vw', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0a192f, #172a45)' }}>
       
       {/* Sign Up Component */}
-      <SignupForm onSubmit={handleSignupSubmit} />
+      {/* <SignupForm onSubmit={handleSignupSubmit} /> */}
 
       {/* Sign In Component */}
       <LoginForm onSubmit={handleLoginSubmit} />
