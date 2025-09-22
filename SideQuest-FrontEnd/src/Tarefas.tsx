@@ -1,8 +1,8 @@
 import { useState } from "react";
 import Sidebar from "./components/Sidebar";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
-import ModalTarefa from "./components/ModalTeste"; //Sera modificado
 import { FaCalendarAlt, FaRegUserCircle } from "react-icons/fa";
+import ModalTarefa from "./components/Modal";
 
 type Status = "Pendente" | "Desenvolvimento" | "Concluído"
 
@@ -10,7 +10,7 @@ interface Tarefa {
     id: string;
     nome: string;
     status: string;
-    descricao?: string;
+    descricao: string;
     comentarios?: string;
     prazo: string;
     responsavel: string;
@@ -40,28 +40,44 @@ export default function Tarefas(){
         return `${dia} ${meses[parseInt(mes,10) - 1]} ${ano}`
     }
 
-    function handleSave(data: Partial<Tarefa>) {
+    function handleSave(data: {
+        name: string;
+        description: string;
+        responsible: string[];
+        endDate: string;
+        status: Status;
+        comment: string;
+    }) {
         if (editarTarefa) {
-            setTarefas((prev) =>
-                prev.map((t) =>
+            setTarefas((prev) => 
+                prev.map((t) => 
                     t.id === editarTarefa.id
-                        ? { ...t, ...data, prazo: formatarData(data.prazo) }
-                        : t
+                     ? {
+                        ...t,
+                        nome: data.name,
+                        descricao: data.description,
+                        status: data.status,
+                        comentarios: data.comment,
+                        prazo: data.endDate,
+                        responsavel: data.responsible.join(",")
+                     }
+                     : t
                 )
             );
         } else {
             const novaTarefa: Tarefa = {
                 id: Date.now().toString(),
-                nome: data.nome ?? "",
-                status: data.status ?? "Pendente",
-                descricao: data.descricao,
-                comentarios: data.comentarios,
-                prazo: formatarData(data.prazo),
-                responsavel: data.responsavel ?? "",
+                nome: data.name,
+                descricao: data.description,
+                status: data.status,
+                comentarios: data.comment,
+                prazo: data.endDate,
+                responsavel: data.responsible.join(",")
             };
             setTarefas((prev) => [...prev, novaTarefa]);
         }
         setIsModalOpen(false);
+        setEditarTarefa(null);
     }
 
     function onDragEnd(result: DropResult) {
@@ -144,11 +160,24 @@ export default function Tarefas(){
                 </div>
             </DragDropContext>
 
-            <ModalTarefa 
+            <ModalTarefa
                 isOpen={isModalOpen} 
                 onClose={() => setIsModalOpen(false)} 
                 onSave={handleSave} 
-                tarefa={editarTarefa}
+                initialData = {
+                    editarTarefa
+                        ? {
+                            name: editarTarefa.nome || "",
+                            description: editarTarefa.descricao || "",
+                            responsible: editarTarefa
+                                ? editarTarefa.responsavel.split(", ")
+                                : [],
+                            endDate: editarTarefa.prazo,
+                            status: editarTarefa.status as Status,
+                            comment: editarTarefa.comentarios || "",                           
+                        }
+                        : undefined
+                }
             />
         </div>
     )
