@@ -1,37 +1,74 @@
-import React, { useState, type ChangeEvent, type JSX, type KeyboardEvent } from 'react';
+import { useEffect, useState, type ChangeEvent, type KeyboardEvent } from 'react';
+
+interface ModalTarefaProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (data: {
+        name: string;
+        description: string;
+        responsible: string[];
+        endDate: string;
+        status: "Pendente" | "Desenvolvimento" | "Concluído"; 
+        comment: string;
+    }) => void;
+    onDelete: (tarefaId: string) => void;
+    initialData?: {
+        id: string;
+        name: string;
+        description: string;
+        responsible: string[];
+        endDate: string;
+        status: "Pendente" | "Desenvolvimento" | "Concluído";
+        comment: string;
+    };
+}
 
 // Interfaces de tipagem
 interface FormData {
+    name: string;
     description: string;
     responsible: string[];
-    startDate: string;
     endDate: string;
-    status: 'Pendente' | 'Em andamento' | 'Concluído';
+    status: 'Pendente' | 'Desenvolvimento' | 'Concluído';
     comment: string;
 }
 
 type FormField = keyof FormData;
 type StatusType = FormData['status'];
 
-export default function App(): JSX.Element {
+export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initialData }: ModalTarefaProps) {
     // Aqui, os ESTADOS armazenam as informações que podem mudar na tela, fazendo com que o React atualize automaticamente quando algo muda
     // Aqui, as FUNÇÕES executam ações específicas como adicionar pessoas ou salvar dados, fazendo com que o código fique organizado em blocos
     // Aqui, as AÇÕES DE BOTÕES respondem aos cliques do usuário, fazendo com que cada botão execute uma tarefa diferente
 
     // Estados: controle de modais, dados do formulário e campos temporários
-    const [isModalOpen, setIsModalOpen] = useState<boolean>(true);
     const [isAddPersonModalOpen, setIsAddPersonModalOpen] = useState<boolean>(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
     const [formData, setFormData] = useState<FormData>({
+        name: '',
         description: '',
         responsible: [],
-        startDate: '2025-09-15',
         endDate: '2025-12-25',
-        status: 'Em andamento',
+        status: 'Desenvolvimento',
         comment: ''
     });
-    const [tempDescription, setTempDescription] = useState<string>(''); // Input temporário de texto para descrição
     const [newPersonName, setNewPersonName] = useState<string>(''); // Input de texto para nome da pessoa
+
+    useEffect(() => {
+        if (initialData) {
+        setFormData(initialData);
+        } else {
+        setFormData({
+            name: "",
+            description: "",
+            responsible: [],
+            endDate: "",
+            status: "Pendente",
+            comment: "",
+        });
+        }
+        setShowDeleteConfirm(false)
+    }, [initialData, isOpen]);
 
     // Funções: atualização de dados, adição/remoção de pessoas e salvamento
     const handleInputChange = (field: FormField, value: string | string[] | StatusType): void => {
@@ -56,45 +93,25 @@ export default function App(): JSX.Element {
         }));
     };
 
-    const saveDescription = (): void => {
-        setFormData(prev => ({ ...prev, description: tempDescription }));
-        setTempDescription('');
-    };
-
-    // Ações dos botões: exclusão com confirmação, salvamento e conclusão
     const handleDelete = (): void => {
         if (showDeleteConfirm) {
-            setIsModalOpen(false);
-            setShowDeleteConfirm(false);
-            alert('Tarefa excluída com sucesso!');
+            if (initialData && initialData.id) {
+                onDelete(initialData.id); 
+            }
         } else {
             setShowDeleteConfirm(true);
         }
     };
 
     const handleSave = (): void => {
-        alert('Tarefa salva com sucesso!');
-    };
-
-    const handleComplete = (): void => {
-        setIsModalOpen(false);
-        alert('Tarefa concluída com sucesso!');
-    };
-
-    const closeModal = (): void => {
-        setIsModalOpen(false);
-    };
-
-    // Handlers para eventos
-    const handleTextAreaChange = (e: ChangeEvent<HTMLTextAreaElement>): void => {
-        setTempDescription(e.target.value);
+        onSave(formData)
     };
 
     const handleCommentChange = (e: ChangeEvent<HTMLTextAreaElement>): void => {
         handleInputChange('comment', e.target.value);
     };
 
-    const handleDateChange = (field: 'startDate' | 'endDate') => (e: ChangeEvent<HTMLInputElement>): void => {
+    const handleDateChange = (field: 'endDate') => (e: ChangeEvent<HTMLInputElement>): void => {
         handleInputChange(field, e.target.value);
     };
 
@@ -118,23 +135,12 @@ export default function App(): JSX.Element {
     };
 
     // Tela inicial quando modal está fechado
-    if (!isModalOpen) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-100">
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                    Abrir Modal de Tarefa
-                </button>
-            </div>
-        );
-    }
+    if (!isOpen) return null
 
     return (
         <>
             {/* Modal Principal - Overlay com fundo escuro semi-transparente */}
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center p-4 z-50">
                 {/* Container do modal - fundo branco, bordas arredondadas de 24px, max-width responsivo */}
                 <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
                     {/* Card principal com cor de fundo rosa claro customizada */}
@@ -143,14 +149,18 @@ export default function App(): JSX.Element {
                         {/* Header do Modal */}
                         <header className="relative mb-8">
                             {/* Título principal - fonte Poppins, tamanho 6xl, cor slate-600 */}
-                            <h1 className="text-6xl font-medium text-slate-600 text-center font-poppins">
-                                TAREFA
-                            </h1>
+                            <input
+                                type="text"
+                                placeholder="Digite o nome da tarefa..."
+                                value={formData.name}
+                                onChange={(e) => handleInputChange('name', e.target.value)}
+                                className="w-full text-center text-2xl font-semibold text-slate-800 bg-transparent outline-none mt-4 placeholder:text-slate-400"
+                            />
                             {/* Linha divisória decorativa - largura 320px, altura 1px */}
                             <div className="w-80 h-px bg-slate-600 mx-auto mt-4"></div>
                             {/* Botão de fechar - posicionado no canto superior direito com offset negativo */}
                             <button
-                                onClick={closeModal}
+                                onClick={onClose}
                                 className="absolute -top-4 -right-4 w-16 h-16 rounded-full"
                             >
                                 <img
@@ -216,28 +226,13 @@ export default function App(): JSX.Element {
                                         />
                                         <h2 className="text-sm text-black text-opacity-50 font-poppins">Descrição</h2>
                                     </div>
-                                    {/* Exibe descrição salva se existir */}
-                                    {formData.description ? (
-                                        <div className="text-xs font-bold text-black text-opacity-50 mb-2">
-                                            {formData.description}
-                                        </div>
-                                    ) : null}
-                                    {/* Input de descrição com botão salvar - layout flexbox horizontal */}
-                                    <div className="flex gap-2">
-                                        <textarea
-                                            value={tempDescription}
-                                            onChange={handleTextAreaChange}
-                                            placeholder="Digite a descrição da tarefa..."
-                                            className="flex-1 h-12 text-xs font-bold text-black text-opacity-50 resize-none outline-none placeholder-black placeholder-opacity-50 border border-gray-200 rounded p-2"
-                                        />
-                                        <button
-                                            onClick={saveDescription}
-                                            disabled={!tempDescription.trim()}
-                                            className="px-3 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs rounded transition-colors"
-                                        >
-                                            Salvar
-                                        </button>
-                                    </div>
+                                    
+                                    <textarea
+                                        value={formData.description}
+                                        onChange={(e) => handleInputChange('description', e.target.value)}
+                                        placeholder="Digite a descrição da tarefa..."
+                                        className="w-full h-20 text-xs font-bold text-black text-opacity-50 resize-none outline-none placeholder-black placeholder-opacity-50 border border-gray-200 rounded p-2"
+                                    />
                                 </section>
                             </div>
 
@@ -254,15 +249,7 @@ export default function App(): JSX.Element {
                                         />
                                         <h2 className="text-xs text-black text-opacity-50 font-poppins">Prazo</h2>
                                     </div>
-                                    <div className="space-y-2">
-                                        {/* DATE INPUT - campo de data de início */}
-                                        <input
-                                            type="date"
-                                            value={formData.startDate}
-                                            onChange={handleDateChange('startDate')}
-                                            className="w-full text-sm font-bold text-black text-opacity-50 outline-none"
-                                        />
-                                        <span className="text-sm font-bold text-black text-opacity-50">-</span>
+                                    <div className="space-y-2">                                      
                                         {/* DATE INPUT - campo de data de fim */}
                                         <input
                                             type="date"
@@ -291,7 +278,7 @@ export default function App(): JSX.Element {
                                             className="text-sm font-bold text-black text-opacity-50 outline-none bg-transparent text-center relative z-10"
                                         >
                                             <option value="Pendente">Pendente</option>
-                                            <option value="Em andamento">Em andamento</option>
+                                            <option value="Desenvolvimento">Desenvolvimento</option>
                                             <option value="Concluído">Concluído</option>
                                         </select>
                                     </div>
@@ -340,30 +327,21 @@ export default function App(): JSX.Element {
 
                         {/* Footer - Botões de ação alinhados nas extremidades */}
                         <footer className="flex justify-between items-center mt-8">
-                            {/* Grupo de botões à esquerda - gap pequeno entre eles */}
-                            <div className="flex gap-3">
-                                {/* Botão excluir - vermelho, muda texto quando confirma */}
-                                <button
-                                    onClick={handleDelete}
-                                    className={`px-4 py-2 rounded-lg font-semibold text-sm text-red-50 transition-colors ${showDeleteConfirm ? 'bg-red-700' : 'bg-red-500 hover:bg-red-600'
-                                        }`}
-                                >
-                                    {showDeleteConfirm ? 'CONFIRMAR EXCLUSÃO' : 'EXCLUIR'}
-                                </button>
-                                {/* Botão salvar - azul padrão */}
-                                <button
-                                    onClick={handleSave}
-                                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg font-semibold text-sm text-red-50 transition-colors"
-                                >
-                                    SALVAR
-                                </button>
-                            </div>
-                            {/* Botão concluir - verde, posicionado na extrema direita */}
+                            {/* Botão de exclusão fica à esquerda */}
                             <button
-                                onClick={handleComplete}
-                                className="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-lg font-semibold text-sm text-red-50 transition-colors"
+                                onClick={handleDelete}
+                                className={`px-4 py-2 rounded-lg font-semibold text-sm text-red-50 transition-colors ${showDeleteConfirm ? 'bg-red-700' : 'bg-red-500 hover:bg-red-600'
+                                    }`}
                             >
-                                CONCLUIR
+                                {showDeleteConfirm ? 'CONFIRMAR EXCLUSÃO' : 'EXCLUIR'}
+                            </button>
+
+                            {/* Botão de salvamento fica à direita */}
+                            <button
+                                onClick={handleSave}
+                                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg font-semibold text-sm text-red-50 transition-colors"
+                            >
+                                SALVAR
                             </button>
                         </footer>
                     </div>
@@ -372,7 +350,7 @@ export default function App(): JSX.Element {
 
             {/* Modal Secundário - Adicionar Pessoa */}
             {isAddPersonModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">
+                <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center p-4 z-[9999]">
                     {/* Card modal menor - fundo branco, bordas menos arredondadas */}
                     <div className="bg-white rounded-2xl p-6 w-full max-w-md">
                         <h2 className="text-xl font-semibold mb-4 text-center">Adicionar Responsável</h2>

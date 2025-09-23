@@ -23,7 +23,7 @@ interface TarefaModalProps {
   } | null;
 }
 
-export default function ModalTarefa({
+export default function ModalTarefaT({
   isOpen,
   onClose,
   onSave,
