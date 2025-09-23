@@ -18,7 +18,6 @@ interface Tarefa {
 
 export default function Tarefas(){
 
-    // Tarefa para teste
     const [tarefas, setTarefas] = useState<Tarefa[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editarTarefa, setEditarTarefa] = useState<Tarefa | null>(null);
@@ -37,6 +36,7 @@ export default function Tarefas(){
         if (!data) return "";
         const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
         const [ano, mes, dia] = data.split("-");
+        if (!ano || !mes || !dia) return data; 
         return `${dia} ${meses[parseInt(mes,10) - 1]} ${ano}`
     }
 
@@ -52,7 +52,7 @@ export default function Tarefas(){
             setTarefas((prev) => 
                 prev.map((t) => 
                     t.id === editarTarefa.id
-                     ? {
+                    ? {
                         ...t,
                         nome: data.name,
                         descricao: data.description,
@@ -60,8 +60,8 @@ export default function Tarefas(){
                         comentarios: data.comment,
                         prazo: data.endDate,
                         responsavel: data.responsible.join(",")
-                     }
-                     : t
+                    }
+                    : t
                 )
             );
         } else {
@@ -78,6 +78,12 @@ export default function Tarefas(){
         }
         setIsModalOpen(false);
         setEditarTarefa(null);
+    }
+
+    function handleDelete(tarefaId: string) {
+        setTarefas((prev) => prev.filter((tarefa) => tarefa.id !== tarefaId));
+        setIsModalOpen(false); 
+        setEditarTarefa(null); 
     }
 
     function onDragEnd(result: DropResult) {
@@ -127,7 +133,7 @@ export default function Tarefas(){
                                                         ref={provided.innerRef}
                                                         {...provided.draggableProps}
                                                         {...provided.dragHandleProps}
-                                                        className={`p-3 mb-3 bg-white rounded-xl shadow cursor-pointer transition ${
+                                                        className={`p-3 m-2 bg-white rounded-xl shadow cursor-pointer transition ${
                                                             snapshot.isDragging ? "bg-blue-200" : "hover:bg-gray-50"
                                                         }`}
                                                         onClick={() => handleOpenEdit(tarefa)}
@@ -139,13 +145,14 @@ export default function Tarefas(){
                                                             </div>
                                                             <div className="flex justify-between mt-7">
                                                                 <p className="flex items-center gap-1"><FaRegUserCircle />{tarefa.responsavel}</p>
-                                                                <p className="flex items-center gap-1">{tarefa.prazo}<FaCalendarAlt /></p>
+                                                                <p className="flex items-center gap-1">{formatarData(tarefa.prazo)}<FaCalendarAlt /></p>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 )}
                                             </Draggable>
                                         ))}
+                                        {provided.placeholder}
                                     </div>
                                 )}
                             </Droppable>
@@ -163,18 +170,18 @@ export default function Tarefas(){
             <ModalTarefa
                 isOpen={isModalOpen} 
                 onClose={() => setIsModalOpen(false)} 
-                onSave={handleSave} 
+                onSave={handleSave}
+                onDelete={handleDelete}
                 initialData = {
                     editarTarefa
                         ? {
+                            id: editarTarefa.id,
                             name: editarTarefa.nome || "",
                             description: editarTarefa.descricao || "",
-                            responsible: editarTarefa
-                                ? editarTarefa.responsavel.split(", ")
-                                : [],
+                            responsible: editarTarefa.responsavel ? editarTarefa.responsavel.split(",") : [],
                             endDate: editarTarefa.prazo,
                             status: editarTarefa.status as Status,
-                            comment: editarTarefa.comentarios || "",                           
+                            comment: editarTarefa.comentarios || "",                    
                         }
                         : undefined
                 }
