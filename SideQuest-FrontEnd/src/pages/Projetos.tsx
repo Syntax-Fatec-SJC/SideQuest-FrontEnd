@@ -27,18 +27,13 @@ export default function GerenciarProjetos() {
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
-      {/* Sidebar fixa na esquerda */}
-      <div className="w-full md:w-64">
         <Sidebar />
-      </div>
 
-      {/* Conteúdo principal */}
-      <div className="flex-1 p-4 sm:p-6 flex flex-col items-center bg-white m-4 md:m-8 rounded-2xl md:rounded-3xl shadow-lg">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold mb-6 text-center text-azul-escuro">
-          Gerenciar Projetos
+      <div className="flex-1 bg-white rounded-3xl overflow-auto p-8 shadow-lg mt-8 mb-8 mx-4 custom-scrollbar">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold mb-6 text-center text-azul-escuro">
+          GERENCIAR PROJETOS
         </h1>
 
-        {/* Grid responsivo */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full max-w-[1100px]">
           {projetos.map((projeto) => (
             <div
@@ -53,7 +48,6 @@ export default function GerenciarProjetos() {
             </div>
           ))}
 
-          {/* Card para criar novo projeto */}
           <div className="relative">
             <button
               onClick={() => setShowModal(true)}
