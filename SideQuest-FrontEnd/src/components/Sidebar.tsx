@@ -1,12 +1,5 @@
 import { 
-  MdOutlineDashboard, 
-  MdChecklist, 
-  MdOutlineCalendarToday, 
-  MdOutlineAssessment, 
-  MdOutlinePeopleAlt, 
-  MdNotificationsNone, 
-  MdFolder, 
-  MdLogout 
+  MdOutlineDashboard, MdChecklist, MdOutlineCalendarToday, MdOutlineAssessment, MdOutlinePeopleAlt, MdNotificationsNone, MdFolder, MdLogout 
 } from "react-icons/md";
 import { Link } from "react-router-dom";
 import type { IconType } from "react-icons";
@@ -14,8 +7,8 @@ import type { IconType } from "react-icons";
 interface SidebarLinkProps {
   icon: IconType;
   label: string;
-  to?: string;             // opcional para links de ação
-  onClick?: () => void;    // opcional para links que executam ação
+  to?: string;         
+  onClick?: () => void;    
 }
 
 const SidebarLink = ({ icon: Icon, label, to = "#", onClick }: SidebarLinkProps) => (
@@ -32,13 +25,11 @@ const SidebarLink = ({ icon: Icon, label, to = "#", onClick }: SidebarLinkProps)
 export default function Sidebar() {
   const handleLogout = () => {
     console.log("Sair da conta");
-    // Aqui você pode adicionar lógica de logout real
   };
 
   return (
     <div className="w-52 h-[calc(100vh-4rem)] bg-white shadow-lg mt-8 mb-8 flex flex-col p-4 rounded-r-3xl border-r-2 border-gray-200">
       
-      {/* Perfil */}
       <div className="flex flex-col items-center mt-10 mb-4">
         <div className="bg-gray-300 rounded-full w-20 h-20 flex items-center justify-center">
           <span className="text-white text-2xl">R</span>
@@ -47,7 +38,6 @@ export default function Sidebar() {
         <p className="text-sm text-gray-500">Cargo</p>
       </div>
 
-      {/* Links principais */}
       <div className="flex flex-col gap-2 px-4">
         <SidebarLink icon={MdOutlineDashboard} label="Dashboard" to="/dashboard" />
         <SidebarLink icon={MdChecklist} label="Tarefas" to="/tarefas" />
@@ -59,7 +49,6 @@ export default function Sidebar() {
 
       <div className="flex-1" />
 
-      {/* Links finais */}
       <div className="flex flex-col gap-2 px-4 mb-4">
         <SidebarLink icon={MdFolder} label="Projetos" to="/projetos" />
         <SidebarLink icon={MdLogout} label="Sair" onClick={handleLogout} />

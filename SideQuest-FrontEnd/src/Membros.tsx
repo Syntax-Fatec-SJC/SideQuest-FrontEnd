@@ -97,7 +97,7 @@ export default function Membros() {
         <div className="flex h-screen relative">
             <Sidebar />
             <main className="flex-1 bg-white rounded-3xl overflow-auto p-8 shadow-lg mt-8 mb-8 mx-4 custom-scrollbar">
-                <h1 className="text-center mb-6 text-3xl font-bold text-blue-900">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold mb-6 text-center text-azul-escuro">
                     GERENCIAR MEMBROS
                 </h1>
 

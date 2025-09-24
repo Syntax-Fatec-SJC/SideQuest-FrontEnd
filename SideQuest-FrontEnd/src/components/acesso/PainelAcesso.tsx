@@ -5,10 +5,10 @@ interface AuthToggleProps {
   onToggleToSignup: () => void;
 }
 
-const AuthToggle: React.FC<AuthToggleProps> = ({ onToggleToLogin, onToggleToSignup }) => {
+const PainelAcesso: React.FC<AuthToggleProps> = ({ onToggleToLogin, onToggleToSignup }) => {
   return (
     <div className="toggle-container w-full sm:w-4/5 md:w-1/2">
-      <div className="toggle w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ff8c1a, #ffaf00)' }}>
+      <div className="toggle" style={{ background: 'linear-gradient(135deg, #ff8c1a, #ffaf00)' }}>
         <div className="toggle-panel toggle-left">
           <h1 className="text-[#1565C0]">Bem-vindo de volta!</h1>
           <p className="text-[#1565C0]">Para se manter conectado, faça login com suas informações pessoais</p>
@@ -36,4 +36,4 @@ const AuthToggle: React.FC<AuthToggleProps> = ({ onToggleToLogin, onToggleToSign
   );
 };
 
-export default AuthToggle;
+export default PainelAcesso;
