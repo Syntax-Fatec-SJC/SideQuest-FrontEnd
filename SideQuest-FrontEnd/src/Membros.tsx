@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
+import axios from "axios";
 
 interface Member {
-    name: string;
+    id?: string;
+    nome: string;
     email: string;
-    role: string;
+    funcao: string;
     isEditing: boolean;
 }
 
@@ -12,9 +14,18 @@ export default function Membros() {
     const [members, setMembers] = useState<Member[]>([]);
     const [search, setSearch] = useState("");
     const [confirmDeleteIndex, setConfirmDeleteIndex] = useState<number | null>(null);
-
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+    const BASE_URL = "http://localhost:8080/membros";
+
+    // Carregar membros do backend
+    useEffect(() => {
+        axios.get(BASE_URL)
+            .then(res => setMembers(res.data.map((m: any) => ({ ...m, isEditing: false }))))
+            .catch(() => setToastMessage("Erro ao carregar membros"));
+    }, []);
+
+    // Toast timer
     useEffect(() => {
         if (toastMessage) {
             const timer = setTimeout(() => setToastMessage(null), 3000);
@@ -30,65 +41,76 @@ export default function Membros() {
         }
 
         setMembers([
-            { name: "", email: "", role: "", isEditing: true },
+            { nome: "", email: "", funcao: "", isEditing: true },
             ...members,
         ]);
     };
 
-
-    const toggleEdit = (index: number) => {
+    const toggleEdit = async (index: number) => {
         const editingMemberExists = members.some((m, i) => m.isEditing && i !== index);
         if (editingMemberExists) {
             setToastMessage("Salve o membro atual antes de editar outro!");
             return;
         }
 
+        const member = members[index];
         const form = document.getElementById(`member-form-${index}`) as HTMLFormElement | null;
         if (!form) return;
 
-        const isEditing = members[index].isEditing;
-
-        if (isEditing) {
-            // Tentando salvar
+        if (member.isEditing) {
+            // Validar campos
             if (!form.checkValidity()) {
                 form.reportValidity();
                 return;
             }
+
+            // Validação customizada de email
+            if (!/\S+@\S+\.\S+/.test(member.email)) {
+                setToastMessage("Email inválido!");
+                return;
+            }
+
+            try {
+                let res;
+                if (member.id) {
+                    res = await axios.put(`${BASE_URL}/${member.id}`, member);
+                } else {
+                    res = await axios.post(BASE_URL, member);
+                }
+                const updatedMember = { ...res.data, isEditing: false };
+                setMembers(prev => prev.map((m, i) => i === index ? updatedMember : m));
+            } catch (err: any) {
+                setToastMessage(err.response?.data?.message || "Erro ao salvar membro");
+            }
+        } else {
+            setMembers(prev => prev.map((m, i) => i === index ? { ...m, isEditing: true } : m));
         }
-
-        setMembers((prev) =>
-            prev.map((m, i) =>
-                i === index ? { ...m, isEditing: !m.isEditing } : m
-            )
-        );
     };
 
-
-    const handleChange = (
-        index: number,
-        field: keyof Member,
-        value: string
-    ) => {
-        setMembers((prev) =>
-            prev.map((m, i) => (i === index ? { ...m, [field]: value } : m))
-        );
+    const handleChange = (index: number, field: keyof Member, value: string) => {
+        setMembers(prev => prev.map((m, i) => i === index ? { ...m, [field]: value } : m));
     };
 
-    const askDeleteMember = (index: number) => {
-        setConfirmDeleteIndex(index);
-    };
+    const askDeleteMember = (index: number) => setConfirmDeleteIndex(index);
+    const cancelDelete = () => setConfirmDeleteIndex(null);
 
-    const cancelDelete = () => {
+    const confirmDeleteMember = async (index: number) => {
+        const member = members[index];
+        if (member.id) {
+            try {
+                await axios.delete(`${BASE_URL}/${member.id}`);
+            } catch {
+                setToastMessage("Erro ao remover membro");
+                return;
+            }
+        }
+        setMembers(prev => prev.filter((_, i) => i !== index));
         setConfirmDeleteIndex(null);
     };
 
-    const confirmDeleteMember = (index: number) => {
-        setMembers(members.filter((_, i) => i !== index));
-        setConfirmDeleteIndex(null);
-    };
-
-    const filteredMembers = members.filter((m) =>
-        [m.name, m.email, m.role].some((field) =>
+    // Pesquisa de membros
+    const filteredMembers = members.filter(m =>
+        [m.nome ?? "", m.email ?? "", m.funcao ?? ""].some(field =>
             field.toLowerCase().includes(search.toLowerCase())
         )
     );
@@ -120,25 +142,22 @@ export default function Membros() {
                 <div className="space-y-4">
                     {filteredMembers.map((member, index) => (
                         <form
-                            id={`member-form-${index}`}
                             key={index}
+                            id={`member-form-${index}`}
                             className="bg-[#F5F5F5] rounded-lg shadow-md p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2 transition"
                             onSubmit={(e) => e.preventDefault()}
-                            noValidate
                         >
                             <div className="flex-1 flex flex-col md:flex-row md:gap-2 gap-2">
                                 <input
                                     type="text"
                                     placeholder="Nome"
-                                    value={member.name}
+                                    value={member.nome}
                                     readOnly={!member.isEditing}
-                                    onChange={(e) =>
-                                        handleChange(index, "name", e.target.value)
-                                    }
+                                    onChange={(e) => handleChange(index, "nome", e.target.value)}
                                     required
                                     className={`flex-1 p-2 rounded-md transition ${member.isEditing
-                                            ? "border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                            : "border-none outline-none bg-transparent cursor-default"
+                                        ? "border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                        : "border-none outline-none bg-transparent cursor-default"
                                         }`}
                                 />
                                 <input
@@ -146,27 +165,23 @@ export default function Membros() {
                                     placeholder="Email"
                                     value={member.email}
                                     readOnly={!member.isEditing}
-                                    onChange={(e) =>
-                                        handleChange(index, "email", e.target.value)
-                                    }
+                                    onChange={(e) => handleChange(index, "email", e.target.value)}
                                     required
                                     className={`flex-1 p-2 rounded-md transition ${member.isEditing
-                                            ? "border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                            : "border-none outline-none bg-transparent cursor-default"
+                                        ? "border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                        : "border-none outline-none bg-transparent cursor-default"
                                         }`}
                                 />
                                 <input
                                     type="text"
                                     placeholder="Função"
-                                    value={member.role}
+                                    value={member.funcao}
                                     readOnly={!member.isEditing}
-                                    onChange={(e) =>
-                                        handleChange(index, "role", e.target.value)
-                                    }
+                                    onChange={(e) => handleChange(index, "funcao", e.target.value)}
                                     required
                                     className={`flex-1 p-2 rounded-md transition ${member.isEditing
-                                            ? "border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                            : "border-none outline-none bg-transparent cursor-default"
+                                        ? "border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                        : "border-none outline-none bg-transparent cursor-default"
                                         }`}
                                 />
                             </div>
@@ -196,8 +211,8 @@ export default function Membros() {
                                         <button
                                             type="button"
                                             className={`px-4 py-2 text-white rounded-md h-full ${member.isEditing
-                                                    ? "bg-blue-600 hover:bg-blue-700"
-                                                    : "bg-green-600 hover:bg-green-700"
+                                                ? "bg-blue-600 hover:bg-blue-700"
+                                                : "bg-green-600 hover:bg-green-700"
                                                 }`}
                                             onClick={() => toggleEdit(index)}
                                         >
@@ -217,7 +232,6 @@ export default function Membros() {
                     ))}
                 </div>
 
-                {/* Toast popup */}
                 {toastMessage && (
                     <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-white text-black px-4 py-2 rounded shadow-lg pointer-events-none select-none animate-fadeInOut">
                         {toastMessage}

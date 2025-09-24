@@ -165,11 +165,11 @@ export default function Tarefas() {
     ];
 
     return (
-        <div className="flex gap-5">
+        <div className="flex h-screen relative">
             <Sidebar />
 
             <DragDropContext onDragEnd={onDragEnd}>
-                <div className="flex flex-col items-center w-[1245px] h-[calc(100vh-4rem)] bg-white mt-8 mb-8 p-4 rounded-3xl">
+                <div className="flex-1 bg-white rounded-3xl overflow-auto p-8 shadow-lg mt-8 mb-8 mx-4 custom-scrollbar">
                     <div className="flex flex-row justify-center gap-10 w-full flex-1">
                         {columns.map((col) => (
                             <Droppable key={col.id} droppableId={col.id}>
@@ -177,7 +177,7 @@ export default function Tarefas() {
                                     <div
                                         ref={provided.innerRef}
                                         {...provided.droppableProps}
-                                        className={`flex flex-col flex-1 bg-[#F2EEE9] rounded-xl shadow-2xl transition-colors overflow-y-auto max-h-[calc(100vh-10rem)] min-h-[calc(100vh-10rem)]
+                                        className={`flex flex-col flex-1 bg-[#F2EEE9] rounded-xl shadow-2xl transition-colors overflow-y-auto max-h-[calc(94vh-10rem)] min-h-[calc(94vh-10rem)]
                                             ${snapshot.isDraggingOver ? "bg-blue-100" : ""}`}
                                     >
                                         <h5 className={`flex justify-center mb-4 text-2xl font-mono sticky top-0 z-10 bg-[#F2EEE9] py-2 ${col.color}`}>
