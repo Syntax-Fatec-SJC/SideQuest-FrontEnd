@@ -140,6 +140,28 @@ export const authService = {
   loginWithGoogle: () => {
     
     window.location.href = 'http://localhost:8080/oauth2/authorization/google';
+  },
+
+  // Solicitar reset de senha
+  solicitarResetSenha: async (email: string): Promise<string> => {
+    const response = await fetchApi('/auth/solicitar-reset-senha', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+    
+    // O endpoint retorna texto simples, não JSON
+    return response.text();
+  },
+
+  // Redefinir senha
+  redefinirSenha: async (token: string, novaSenha: string): Promise<string> => {
+    const response = await fetchApi('/auth/redefinir-senha', {
+      method: 'POST',
+      body: JSON.stringify({ token, novaSenha })
+    });
+    
+    // O endpoint retorna texto simples, não JSON
+    return response.text();
   }
 };
 

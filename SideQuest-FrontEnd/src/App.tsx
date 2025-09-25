@@ -5,6 +5,7 @@ import Membros from './Membros';
 import Acesso from './pages/Acesso';
 import Tarefas from './Tarefas';
 import AuthCallback from './pages/AuthCallback';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   return (
@@ -15,6 +16,9 @@ function App() {
         
         {/* Rota de callback para OAuth2 */}
         <Route path="/auth/callback" element={<AuthCallback />} />
+        
+        {/* Rota para redefinir senha */}
+        <Route path="/reset-password" element={<ResetPassword />} />
         
         {/* Rotas protegidas com Layout */}
         <Route path="/app" element={<Layout />}>

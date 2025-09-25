@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BotaoGoogle from '../BotaoGoogle';
+import ForgotPasswordModal from './ForgotPasswordModal';
 import { authService, ApiError } from '../../services/authService';
 import { tokenUtils, userUtils } from '../../utils/auth';
 import type { LoginData } from '../../types/auth';
@@ -14,6 +15,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
   const [loginData, setLoginData] = useState<LoginData>({ email: '', senha: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,12 +100,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
         />
 
-        <a
-          href="#"
+        <button
+          type="button"
+          onClick={() => setShowForgotPassword(true)}
           className="text-[#FFD600] text-xs mb-2 hover:underline"
         >
           Esqueceu a senha?
-        </a>
+        </button>
 
         <button
           type="submit"
@@ -120,6 +123,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
           {loading ? 'Entrando...' : 'Entrar'}
         </button>
       </form>
+      
+      <ForgotPasswordModal 
+        isOpen={showForgotPassword} 
+        onClose={() => setShowForgotPassword(false)} 
+      />
     </div>
   );
 };
