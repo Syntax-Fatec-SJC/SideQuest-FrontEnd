@@ -1,4 +1,4 @@
-import type { LoginData, CadastroData, AuthResponse, Usuario, ErrorResponse } from '../types/auth';
+import type { LoginData, CadastroData, AuthResponse, CadastroResponse, Usuario, ErrorResponse } from '../types/auth';
 import { tokenUtils } from '../utils/auth';
 
 // Em desenvolvimento usa o proxy do Vite, em produção usa a URL completa
@@ -102,7 +102,7 @@ export const authService = {
   },
 
   // Fazer cadastro
-  cadastro: async (cadastroData: CadastroData): Promise<AuthResponse> => {
+  cadastro: async (cadastroData: CadastroData): Promise<CadastroResponse> => {
     try {
       console.log('Enviando requisição de cadastro para:', cadastroData.email);
       
@@ -114,8 +114,8 @@ export const authService = {
       console.log('Response status:', response.status);
       console.log('Response ok:', response.ok);
       
-      const result = await handleResponse<AuthResponse>(response);
-      console.log('Cadastro bem-sucedido para usuário:', result.nome);
+      const result = await handleResponse<CadastroResponse>(response);
+      console.log('Cadastro bem-sucedido:', result.mensagem);
       
       return result;
     } catch (error) {

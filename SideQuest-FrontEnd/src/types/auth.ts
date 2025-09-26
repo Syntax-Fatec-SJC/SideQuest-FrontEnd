@@ -17,6 +17,11 @@ export interface AuthResponse {
   nome: string;
 }
 
+export interface CadastroResponse {
+  mensagem: string;
+  email: string;
+}
+
 export interface Usuario {
   id: string;
   nome: string;

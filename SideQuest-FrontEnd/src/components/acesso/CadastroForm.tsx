@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import BotaoGoogle from "../BotaoGoogle";
 import { HiEye, HiEyeOff } from "react-icons/hi";
 import { authService, ApiError } from '../../services/authService';
-import { tokenUtils, userUtils } from '../../utils/auth';
 import type { CadastroData } from '../../types/auth';
 
 interface CadastroProps {
@@ -20,7 +18,6 @@ function CadastroForm({ onSubmit }: CadastroProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCadastroData({ ...cadastroData, [e.target.name]: e.target.value });
@@ -49,15 +46,12 @@ function CadastroForm({ onSubmit }: CadastroProps) {
       // Faz cadastro via API
       console.log('Fazendo requisição de cadastro...');
       const response = await authService.cadastro(cadastroData);
-      console.log('Cadastro realizado com sucesso, ID:', response.id);
+      console.log('Cadastro realizado com sucesso:', response.mensagem);
       
-      // Salva token e dados do usuário
-      tokenUtils.saveToken(response.token);
-      userUtils.saveUser({ id: response.id, nome: response.nome });
-      
-      console.log('Redirecionando para /projetos...');
-      // Redireciona para projetos - não precisa setar loading false pois a página vai mudar
-      navigate("/projetos", { replace: true });
+      // Mostra mensagem de sucesso e limpa o formulário
+      alert(response.mensagem);
+      setCadastroData({ nome: "", email: "", senha: "" });
+      setLoading(false);
       
     } catch (err) {
       console.error('Erro no cadastro:', err);
