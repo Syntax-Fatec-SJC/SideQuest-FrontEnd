@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BotaoGoogle from '../BotaoGoogle';
-import ForgotPasswordModal from './ForgotPasswordModal';
 import { authService, ApiError } from '../../services/authService';
 import { tokenUtils, userUtils } from '../../utils/auth';
 import type { LoginData } from '../../types/auth';
@@ -9,13 +8,13 @@ import './LoginForm.css';
 
 interface LoginFormProps {
   onSubmit?: (loginData: LoginData) => void;
+  onForgotPassword?: () => void;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, onForgotPassword }) => {
   const [loginData, setLoginData] = useState<LoginData>({ email: '', senha: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,10 +59,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
   return (
     <div className="form-container sign-in w-full flex items-center justify-center">
       <form
-        onSubmit={handleSubmit}
-        className="bg-white rounded-2xl p-6 sm:p-8 flex flex-col items-center w-full max-w-[400px] shadow-lg"
-        style={{ boxShadow: '0 20px 40px -10px rgba(10,25,47,0.8)' }}
-      >
+          onSubmit={handleSubmit}
+          className="bg-white rounded-2xl p-6 sm:p-8 flex flex-col items-center w-full max-w-[400px] shadow-lg"
+          style={{ boxShadow: '0 20px 40px -10px rgba(10,25,47,0.8)' }}
+        >
         <h1 className="text-[#1565C0] text-2xl font-bold mb-2">Entrar</h1>
 
         <div className="social-icons flex my-4 w-full">
@@ -102,7 +101,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
 
         <button
           type="button"
-          onClick={() => setShowForgotPassword(true)}
+          onClick={onForgotPassword}
           className="text-[#FFD600] text-xs mb-2 hover:underline"
         >
           Esqueceu a senha?
@@ -123,11 +122,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
           {loading ? 'Entrando...' : 'Entrar'}
         </button>
       </form>
-      
-      <ForgotPasswordModal 
-        isOpen={showForgotPassword} 
-        onClose={() => setShowForgotPassword(false)} 
-      />
     </div>
   );
 };
