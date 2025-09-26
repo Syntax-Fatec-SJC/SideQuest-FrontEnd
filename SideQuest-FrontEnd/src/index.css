@@ -14,3 +14,26 @@ body {
   background: linear-gradient(180deg, #194D88 0%, #3D8DC2 100%);
   font-family: 'Poppins', sans-serif;
 }
+
+/* Botão principal */
+.btn-main {
+  font-weight: bold;
+  padding: 8px 32px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, #ffaf00, #ffe0b2);
+  color: #0a192f;
+  box-shadow: 0 0 30px rgba(255, 175, 0, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-main:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 40px rgba(255, 175, 0, 0.4);
+}
+
+.btn-main:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -1,7 +1,8 @@
 import { 
   MdOutlineDashboard, MdChecklist, MdOutlineCalendarToday, MdOutlineAssessment, MdOutlinePeopleAlt, MdNotificationsNone, MdFolder, MdLogout 
 } from "react-icons/md";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { tokenUtils, userUtils } from "../utils/auth";
 import type { IconType } from "react-icons";
 
 interface SidebarLinkProps {
@@ -11,20 +12,40 @@ interface SidebarLinkProps {
   onClick?: () => void;    
 }
 
-const SidebarLink = ({ icon: Icon, label, to = "#", onClick }: SidebarLinkProps) => (
-  <Link
-    to={to}
-    onClick={onClick}
-    className="flex items-center gap-2 p-2 hover:bg-gray-200 rounded"
-  >
-    <Icon size={20} />
-    {label}
-  </Link>
-);
+const SidebarLink = ({ icon: Icon, label, to = "#", onClick }: SidebarLinkProps) => {
+  const handleClick = (e: React.MouseEvent) => {
+    if (onClick) {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
+  return (
+    <Link
+      to={to}
+      onClick={handleClick}
+      className="flex items-center gap-2 p-2 hover:bg-gray-200 rounded"
+    >
+      <Icon size={20} />
+      {label}
+    </Link>
+  );
+};
 
 export default function Sidebar() {
+  const navigate = useNavigate();
+
   const handleLogout = () => {
-    console.log("Sair da conta");
+    console.log("Logout iniciado...");
+    
+    // Limpa o token e dados do usuário do localStorage
+    tokenUtils.removeToken();
+    userUtils.removeUser();
+    
+    console.log("Dados limpos, redirecionando...");
+    
+    // Redireciona para a página de login/cadastro
+    navigate("/", { replace: true });
   };
 
   return (
