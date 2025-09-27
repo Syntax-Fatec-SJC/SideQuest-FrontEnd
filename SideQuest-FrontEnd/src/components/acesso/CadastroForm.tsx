@@ -2,13 +2,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BotaoGoogle from "../BotaoGoogle";
 import { HiEye, HiEyeOff } from "react-icons/hi";
+import type { UsuarioDTO } from "../../types/api";
+import ApiService from "../../services/ApiService";
 
 
-interface CadastroProps {
-  onSubmit?: (cadastroData: { nome: string; email: string; senha: string }) => void;
-}
-
-function CadastroForm({ onSubmit }: CadastroProps) {
+function CadastroForm() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [mensagem, setMensagem] = useState('');
   const [showSenha, setShowSenha] = useState(false);
   const [cadastroData, setCadastroData] = useState({
     nome: "",
@@ -21,14 +21,31 @@ function CadastroForm({ onSubmit }: CadastroProps) {
     setCadastroData({ ...cadastroData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (onSubmit) {
-      onSubmit(cadastroData);
-    } else {
-      console.log("Cadastro data:", cadastroData);
+    setIsLoading(true);
+    setMensagem('');
+
+    try {
+      const dadosParaCadastro: UsuarioDTO = {
+        nome: cadastroData.nome,
+        email: cadastroData.email,
+        senha: cadastroData.senha
+      };
+
+      const usuarioCriado = await ApiService.cadastrarUsuario(dadosParaCadastro);
+      setMensagem('Usuário cadastrado com sucesso!');
+      console.log('Usuário criado:', usuarioCriado)
+
+      setTimeout(() => {
+        navigate('/projetos');
+      }, 2000);
+    } catch (error) {
+      console.error('Erro no cadastro:', error);
+      setMensagem('Erro ao cadastrar usuário. Tente novamente.');
+    } finally {
+      setIsLoading(false)
     }
-    navigate("/projetos");
   };
 
   return (
@@ -90,11 +107,21 @@ function CadastroForm({ onSubmit }: CadastroProps) {
 
         <button
           type="submit"
+          disabled={isLoading}
           className="btn-main"
         >
-          Criar Conta
+          {isLoading ? 'Cadastrando...' : 'Criar Conta'}
         </button>
       </form>
+      {mensagem && (
+        <div className={`p-2 rounded mb-4 text-center ${
+          mensagem.includes('sucesso') 
+            ? 'bg-green-100 text-green-700' 
+            : 'bg-red-100 text-red-700'
+        }`}>
+          {mensagem}
+        </div>
+      )}
     </div>
   );
 }
