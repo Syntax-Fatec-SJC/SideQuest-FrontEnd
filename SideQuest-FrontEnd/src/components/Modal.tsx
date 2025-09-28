@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type KeyboardEvent } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 
 interface ModalTarefaProps {
     isOpen: boolean;
@@ -12,6 +12,7 @@ interface ModalTarefaProps {
         comment: string;
     }) => void;
     onDelete: (tarefaId: string) => void;
+    membrosProjeto?: { id: string; nome: string; email: string }[];
     initialData?: {
         id: string;
         name: string;
@@ -36,14 +37,14 @@ interface FormData {
 type FormField = keyof FormData;
 type StatusType = FormData['status'];
 
-export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initialData }: ModalTarefaProps) {
+export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initialData, membrosProjeto = [] }: ModalTarefaProps) {
     // Aqui, os ESTADOS armazenam as informações que podem mudar na tela, fazendo com que o React atualize automaticamente quando algo muda
     // Aqui, as FUNÇÕES executam ações específicas como adicionar pessoas ou salvar dados, fazendo com que o código fique organizado em blocos
     // Aqui, as AÇÕES DE BOTÕES respondem aos cliques do usuário, fazendo com que cada botão execute uma tarefa diferente
 
     // Estados: controle de modais, dados do formulário e campos temporários
-    const [isAddPersonModalOpen, setIsAddPersonModalOpen] = useState<boolean>(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
+    const [mostrarListaResponsaveis, setMostrarListaResponsaveis] = useState<boolean>(false);
     const [formData, setFormData] = useState<FormData>({
         name: '',
         description: '',
@@ -52,7 +53,6 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
         status: 'Desenvolvimento',
         comment: ''
     });
-    const [newPersonName, setNewPersonName] = useState<string>(''); // Input de texto para nome da pessoa
 
     useEffect(() => {
         if (initialData) {
@@ -75,22 +75,16 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    const addPerson = (): void => {
-        if (newPersonName.trim()) {
-            setFormData(prev => ({
+    const toggleResponsavel = (usuarioId: string) => {
+        setFormData(prev => {
+            const jaExiste = prev.responsible.includes(usuarioId);
+            return {
                 ...prev,
-                responsible: [...prev.responsible, newPersonName.trim()]
-            }));
-            setNewPersonName('');
-            setIsAddPersonModalOpen(false);
-        }
-    };
-
-    const removePerson = (index: number): void => {
-        setFormData(prev => ({
-            ...prev,
-            responsible: prev.responsible.filter((_, i) => i !== index)
-        }));
+                responsible: jaExiste
+                    ? prev.responsible.filter(id => id !== usuarioId)
+                    : [...prev.responsible, usuarioId]
+            };
+        });
     };
 
     const handleDelete = (): void => {
@@ -119,20 +113,8 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
         handleInputChange('status', e.target.value as StatusType);
     };
 
-    const handlePersonNameChange = (e: ChangeEvent<HTMLInputElement>): void => {
-        setNewPersonName(e.target.value);
-    };
-
-    const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>): void => {
-        if (e.key === 'Enter') {
-            addPerson();
-        }
-    };
-
-    const handleCancelAddPerson = (): void => {
-        setIsAddPersonModalOpen(false);
-        setNewPersonName('');
-    };
+    // Ordena membros por nome para exibição consistente
+    const membrosOrdenados = [...membrosProjeto].sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 
     // Tela inicial quando modal está fechado
     if (!isOpen) return null
@@ -179,41 +161,57 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
 
                                 {/* Card Responsáveis - fundo branco, bordas 24px, padding 6 */}
                                 <section className="bg-white rounded-3xl p-6">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <img
-                                            src="https://codia-f2c.s3.us-west-1.amazonaws.com/image/2025-09-15/y0xgE4hNy9.png"
-                                            alt="Usuário"
-                                            className="w-6 h-6"
-                                        />
-                                        <h2 className="text-sm text-black text-opacity-50 font-poppins">Responsável</h2>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <img
+                                                src="https://codia-f2c.s3.us-west-1.amazonaws.com/image/2025-09-15/y0xgE4hNy9.png"
+                                                alt="Usuário"
+                                                className="w-6 h-6"
+                                            />
+                                            <h2 className="text-sm text-black text-opacity-50 font-poppins">Responsáveis</h2>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setMostrarListaResponsaveis(v => !v)}
+                                            className="text-xs text-blue-600 hover:underline"
+                                        >
+                                            {mostrarListaResponsaveis ? 'ocultar' : 'selecionar'}
+                                        </button>
                                     </div>
-                                    {/* Lista de responsáveis com botões de remoção vermelhos circulares */}
-                                    <div className="space-y-2 mb-4">
-                                        {formData.responsible.map((person: string, index: number) => (
-                                            <div key={index} className="flex items-center justify-between">
-                                                <div className="text-sm font-semibold text-black text-opacity-50">
-                                                    {person}
-                                                </div>
-                                                <button
-                                                    onClick={() => removePerson(index)}
-                                                    className="w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors"
-                                                >
-                                                    ×
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <button
-                                        onClick={() => setIsAddPersonModalOpen(true)}
-                                        className="flex items-center gap-2 text-gray-500 hover:text-gray-700"
-                                    >
-                                        <img
-                                            src="https://codia-f2c.s3.us-west-1.amazonaws.com/image/2025-09-15/uMnwUMNQSc.svg"
-                                            alt="Adicionar"
-                                            className="w-6 h-6"
-                                        />
-                                        <span className="text-sm">Adicionar pessoa</span>
-                                    </button>
+                                    {formData.responsible.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 mb-3">
+                                            {formData.responsible.map(r => {
+                                                const m = membrosProjeto.find(m => m.id === r);
+                                                return (
+                                                    <span key={r} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                                                        {m?.nome || r}
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                    {mostrarListaResponsaveis && (
+                                        <div className="max-h-40 overflow-auto pr-1 space-y-1 border rounded p-2 bg-gray-50">
+                                            {membrosOrdenados.length === 0 && (
+                                                <p className="text-xs text-gray-400">Nenhum membro disponível</p>
+                                            )}
+                                            {membrosOrdenados.map(m => {
+                                                const checked = formData.responsible.includes(m.id);
+                                                return (
+                                                    <label key={m.id} className="flex items-center gap-2 text-xs cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={checked}
+                                                            onChange={() => toggleResponsavel(m.id)}
+                                                            className="accent-blue-600"
+                                                        />
+                                                        <span className="text-gray-700 font-medium">{m.nome}</span>
+                                                        <span className="text-gray-400">{m.email}</span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </section>
 
                                 {/* Card Descrição - fundo branco, sistema de edição e exibição */}
@@ -348,39 +346,7 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
                 </div>
             </div>
 
-            {/* Modal Secundário - Adicionar Pessoa */}
-            {isAddPersonModalOpen && (
-                <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center p-4 z-[9999]">
-                    {/* Card modal menor - fundo branco, bordas menos arredondadas */}
-                    <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-                        <h2 className="text-xl font-semibold mb-4 text-center">Adicionar Responsável</h2>
-                        {/* TEXT INPUT - campo para nome da nova pessoa */}
-                        <input
-                            type="text"
-                            value={newPersonName}
-                            onChange={handlePersonNameChange}
-                            placeholder="Nome do responsável"
-                            className="w-full p-3 border border-gray-300 rounded-lg mb-4 outline-none focus:border-blue-500"
-                            onKeyPress={handleKeyPress}
-                        />
-                        {/* Botões alinhados à direita */}
-                        <div className="flex gap-3 justify-end">
-                            <button
-                                onClick={handleCancelAddPerson}
-                                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={addPerson}
-                                className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
-                            >
-                                Adicionar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Modal secundário removido: agora seleção via checkboxes inline */}
         </>
     );
 }

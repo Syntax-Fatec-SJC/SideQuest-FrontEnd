@@ -1,8 +1,11 @@
 import { 
   MdOutlineDashboard, MdChecklist, MdOutlineCalendarToday, MdOutlineAssessment, MdOutlinePeopleAlt, MdNotificationsNone, MdFolder, MdLogout 
 } from "react-icons/md";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from 'react';
 import type { IconType } from "react-icons";
+import useAuth from '../hooks/useAuth';
+import { BiSolidUser } from "react-icons/bi";
 
 interface SidebarLinkProps {
   icon: IconType;
@@ -23,8 +26,29 @@ const SidebarLink = ({ icon: Icon, label, to = "#", onClick }: SidebarLinkProps)
 );
 
 export default function Sidebar() {
+  const navigate = useNavigate();
+  const { logout, usuario } = useAuth();
+  const [projetoSelecionadoId, setProjetoSelecionadoId] = useState<string | null>(() => localStorage.getItem('projetoSelecionadoId'));
+
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key === 'projetoSelecionadoId') {
+        setProjetoSelecionadoId(localStorage.getItem('projetoSelecionadoId'));
+      }
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, []);
+
   const handleLogout = () => {
-    console.log("Sair da conta");
+    logout();
+    navigate('/acesso');
+  };
+
+  const handleResetProjeto = () => {
+    localStorage.removeItem('projetoSelecionadoId');
+    setProjetoSelecionadoId(null);
+    navigate('/projetos');
   };
 
   return (
@@ -32,26 +56,35 @@ export default function Sidebar() {
       
       <div className="flex flex-col items-center mt-10 mb-4">
         <div className="bg-gray-300 rounded-full w-20 h-20 flex items-center justify-center">
-          <span className="text-white text-2xl">R</span>
+          <span className="text-black text-5xl"><BiSolidUser /></span>
         </div>
-        <h1 className="font-bold text-xl mt-2">Nome do Usuário</h1>
-        <p className="text-sm text-gray-500">Cargo</p>
+        <h1 className="font-bold text-xl mt-2 truncate max-w-[160px]" title={usuario?.nome || 'Usuário'}>
+          {usuario?.nome || 'Usuário'}
+        </h1>
+        <p className="text-sm text-gray-500 truncate max-w-[160px]" title={usuario?.email || ''}>
+          {usuario?.email || 'Sem email'}
+        </p>
       </div>
 
       <div className="flex flex-col gap-2 px-4">
-        <SidebarLink icon={MdOutlineDashboard} label="Dashboard" to="/dashboard" />
-        <SidebarLink icon={MdChecklist} label="Tarefas" to="/tarefas" />
-        <SidebarLink icon={MdOutlineCalendarToday} label="Calendário" to="/calendario" />
-        <SidebarLink icon={MdOutlineAssessment} label="Relatórios" to="/relatorios" />
-        <SidebarLink icon={MdOutlinePeopleAlt} label="Membros" to="/membros" />
-        <SidebarLink icon={MdNotificationsNone} label="Avisos" to="/avisos" />
+        <SidebarLink icon={MdOutlineDashboard} label="Dashboard (Dev.)" to="/projetos" /> {/* Mudar Futuramente*/}
+        {projetoSelecionadoId && (
+          <>
+            <SidebarLink icon={MdChecklist} label="Tarefas" to="/tarefas" />
+            <SidebarLink icon={MdOutlinePeopleAlt} label="Membros" to="/membros" />
+          </>
+        )}
+        {/* Outros links permanecem sempre visíveis, mas podem ser condicionados futuramente */}
+        <SidebarLink icon={MdOutlineCalendarToday} label="Calendário (Dev.)" to="/projetos" /> {/* Mudar Futuramente*/}
+        <SidebarLink icon={MdOutlineAssessment} label="Relatórios (Dev.)" to="/projetos" /> {/* Mudar Futuramente*/}
+        <SidebarLink icon={MdNotificationsNone} label="Avisos (Dev.)" to="/projetos" /> {/* Mudar Futuramente*/}
       </div>
 
       <div className="flex-1" />
 
       <div className="flex flex-col gap-2 px-4 mb-4">
-        <SidebarLink icon={MdFolder} label="Projetos" to="/projetos" />
-        <SidebarLink icon={MdLogout} label="Sair" onClick={handleLogout} />
+        <SidebarLink icon={MdFolder} label="Projetos" to="/projetos" onClick={handleResetProjeto} />
+        <SidebarLink icon={MdLogout} label="Sair" onClick={handleLogout} to="/acesso" />
       </div>
     </div>
   );

@@ -3,10 +3,10 @@ import Sidebar from "./components/Sidebar";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { FaCalendarAlt, FaRegUserCircle, FaTrash } from "react-icons/fa";
 import ModalTarefa from "./components/Modal";
+import ApiService from "./services/ApiService"; // novo uso centralizado
 
 type Status = "Pendente" | "Desenvolvimento" | "Concluído"
 
-// Interface usando EXATAMENTE os campos do backend Spring Boot
 interface Tarefa {
     id: string;
     nome: string;
@@ -16,39 +16,79 @@ interface Tarefa {
     prazoFinal?: string;
     projetoId?: string;
     anexo?: string[];
-    usuariosIds?: string[];
+    usuarioIds?: string[]; 
 }
 
-const API_URL = 'http://localhost:8080';
+interface MembroProjeto {
+    usuarioId: string;
+    nome: string;
+    email: string;
+    criador: boolean;
+}
 
 export default function Tarefas() {
     const [tarefas, setTarefas] = useState<Tarefa[]>([]);
+    const [projetoId, setProjetoId] = useState<string | null>(() => localStorage.getItem('projetoSelecionadoId'));
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editarTarefa, setEditarTarefa] = useState<Tarefa | null>(null);
+    const [confirmandoExclusaoId, setConfirmandoExclusaoId] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [membros, setMembros] = useState<MembroProjeto[]>([]);
 
     // Carregar tarefas do backend
+    // Ouve mudanças do projeto selecionado (outra página selecionou outro projeto)
     useEffect(() => {
-        carregarTarefas();
+        const handler = (e: StorageEvent) => {
+            if (e.key === 'projetoSelecionadoId') {
+                const novo = localStorage.getItem('projetoSelecionadoId');
+                setProjetoId(novo);
+            }
+        };
+        window.addEventListener('storage', handler);
+        return () => window.removeEventListener('storage', handler);
     }, []);
 
-    async function carregarTarefas() {
+    useEffect(() => {
+        if (projetoId) {
+            carregarTarefas(projetoId);
+            carregarMembros(projetoId);
+        } else {
+            setTarefas([]);
+            setMembros([]);
+        }
+    }, [projetoId]);
+
+    async function carregarTarefas(pid: string) {
+        setLoading(true);
+        setError(null);
         try {
-            const response = await fetch(`${API_URL}/listar/tarefas`);
-            if (response.ok) {
-                const data: Tarefa[] = await response.json();
-                setTarefas(data);
-            }
-        } catch (error) {
-            console.error('Erro ao carregar tarefas:', error);
+            const data = await ApiService.listarTarefasDoProjeto(pid);
+            setTarefas(data || []);
+        } catch (error: any) {
+            console.error("Erro ao carregar tarefas:", error);
+            setError(error?.message || 'Falha ao carregar');
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function carregarMembros(pid: string) {
+        try {
+            const lista = await ApiService.listarMembrosProjeto(pid);
+            setMembros(lista || []);
+        } catch (e) {
+            console.error('Erro ao carregar membros do projeto', e);
+            setMembros([]);
         }
     }
 
     function formatarData(data: string | undefined) {
         if (!data) return "";
         const date = new Date(data);
-        const dia = String(date.getDate()).padStart(2, '0');
-        const mes = date.getMonth();
-        const ano = date.getFullYear();
+        const dia = String(date.getUTCDate()).padStart(2, '0');
+        const mes = date.getUTCMonth();
+        const ano = date.getUTCFullYear();
         const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
         return `${dia} ${meses[mes]} ${ano}`;
     }
@@ -71,65 +111,57 @@ export default function Tarefas() {
         status: Status;
         comment: string;
     }) {
-        // Dados no formato exato do backend Spring Boot
-        const tarefaData = {
+        if (!projetoId) return;
+        const tarefaPayload = {
             nome: data.name,
             descricao: data.description,
             status: data.status,
             comentario: data.comment,
             prazoFinal: data.endDate ? new Date(data.endDate).toISOString() : null,
-            projetoId: null,
-            usuariosIds: data.responsible
+            projetoId: projetoId,
+            usuarioIds: data.responsible
         };
-
         try {
-            let response;
             if (editarTarefa) {
-                // Atualizar tarefa
-                response = await fetch(`${API_URL}/atualizar/tarefas/${editarTarefa.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ...tarefaData, id: editarTarefa.id })
-                });
+                await ApiService.atualizarTarefa(editarTarefa.id, tarefaPayload);
             } else {
-                // Criar nova tarefa
-                response = await fetch(`${API_URL}/cadastrar/tarefas`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(tarefaData)
-                });
+                await ApiService.criarTarefa(tarefaPayload);
             }
-
-            if (response.ok) {
-                await carregarTarefas();
-                setIsModalOpen(false);
-                setEditarTarefa(null);
-            }
+            if (projetoId) await carregarTarefas(projetoId);
+            setIsModalOpen(false);
+            setEditarTarefa(null);
         } catch (error) {
-            console.error('Erro ao salvar:', error);
+            console.error("Erro ao salvar tarefa:", error);
         }
     }
 
     async function handleDelete(tarefaId: string) {
         try {
-            await fetch(`${API_URL}/excluir/tarefas/${tarefaId}`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: tarefaId })
-            });
-            await carregarTarefas();
+            await ApiService.excluirTarefa(tarefaId);
+            if (projetoId) await carregarTarefas(projetoId);
         } catch (error) {
-            console.error('Erro ao excluir:', error);
+            console.error("Erro ao excluir:", error);
         }
         setIsModalOpen(false);
         setEditarTarefa(null);
+        setConfirmandoExclusaoId(null);
     }
 
-    async function handleDeleteDirect(tarefaId: string, event: React.MouseEvent) {
-        event.stopPropagation();
-        if (window.confirm('Excluir esta tarefa?')) {
-            await handleDelete(tarefaId);
+    function iniciarExclusao(e: React.MouseEvent, tarefaId: string) {
+        e.stopPropagation();
+        if (confirmandoExclusaoId === tarefaId) {
+            handleDelete(tarefaId);
+        } else {
+            setConfirmandoExclusaoId(tarefaId);
+            setTimeout(() => {
+                setConfirmandoExclusaoId((curr) => (curr === tarefaId ? null : curr));
+            }, 4000);
         }
+    }
+
+    function cancelarExclusao(e: React.MouseEvent) {
+        e.stopPropagation();
+        setConfirmandoExclusaoId(null);
     }
 
     async function onDragEnd(result: DropResult) {
@@ -139,22 +171,21 @@ export default function Tarefas() {
         const novoStatus = destination.droppableId as Status;
         const tarefa = tarefas.find(t => t.id === draggableId);
 
-        if (!tarefa) return;
+        if (!tarefa || tarefa.status === novoStatus) return;
 
         try {
-            await fetch(`${API_URL}/atualizar/tarefas/${draggableId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...tarefa, status: novoStatus })
+            await ApiService.atualizarTarefa(draggableId, {
+                nome: tarefa.nome,
+                descricao: tarefa.descricao,
+                status: novoStatus,
+                comentario: tarefa.comentario || "",
+                prazoFinal: tarefa.prazoFinal || null,
+                projetoId: tarefa.projetoId || projetoId || "",
+                usuarioIds: tarefa.usuarioIds || []
             });
-
-            setTarefas((prev) =>
-                prev.map((t) =>
-                    t.id === draggableId ? { ...t, status: novoStatus } : t
-                )
-            );
+            setTarefas(prev => prev.map(t => t.id === draggableId ? { ...t, status: novoStatus } : t));
         } catch (error) {
-            console.error('Erro ao mover tarefa:', error);
+            console.error("Erro ao mover tarefa:", error);
         }
     }
 
@@ -164,12 +195,20 @@ export default function Tarefas() {
         { id: "Concluído", nome: "Concluído", color: "text-green-700" }
     ];
 
+    const renderConteudoColuna = (colId: string) => {
+        if (loading) return <p className="text-sm text-gray-500 px-3">Carregando...</p>;
+        if (error) return <p className="text-sm text-red-600 px-3">Erro: {error}</p>;
+        const lista = tarefas.filter(t => t.status === colId);
+        if (lista.length === 0) return <p className="text-sm italic text-gray-400 px-3 py-2">Nenhuma tarefa</p>;
+        return null;
+    };
+
     return (
         <div className="flex h-screen relative">
             <Sidebar />
 
             <DragDropContext onDragEnd={onDragEnd}>
-                <div className="flex-1 bg-white rounded-3xl overflow-auto p-8 shadow-lg mt-8 mb-8 mx-4 custom-scrollbar">
+                <div className="flex-1 bg-white rounded-3xl  p-8 shadow-lg mt-8 mb-8 mx-4 custom-scrollbar">
                     <div className="flex flex-row justify-center gap-10 w-full flex-1">
                         {columns.map((col) => (
                             <Droppable key={col.id} droppableId={col.id}>
@@ -183,6 +222,7 @@ export default function Tarefas() {
                                         <h5 className={`flex justify-center mb-4 text-2xl font-mono sticky top-0 z-10 bg-[#F2EEE9] py-2 ${col.color}`}>
                                             {col.nome}
                                         </h5>
+                                        {renderConteudoColuna(col.id)}
                                         {tarefas.filter((t) => t.status === col.id).map((tarefa, index) => (
                                             <Draggable key={tarefa.id} draggableId={tarefa.id} index={index}>
                                                 {(provided, snapshot) => (
@@ -195,11 +235,14 @@ export default function Tarefas() {
                                                         onClick={() => handleOpenEdit(tarefa)}
                                                     >
                                                         <button
-                                                            onClick={(e) => handleDeleteDirect(tarefa.id, e)}
+                                                            onClick={(e) => iniciarExclusao(e, tarefa.id)}
                                                             className="absolute top-2 right-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-full p-1"
                                                         >
-                                                            <FaTrash size={12} />
+                                                            {confirmandoExclusaoId === tarefa.id ? 'Confirmar' : <FaTrash size={12} />}
                                                         </button>
+                                                        {confirmandoExclusaoId === tarefa.id && (
+                                                            <button onClick={cancelarExclusao} className="absolute top-2 right-16 text-xs text-gray-500 hover:text-gray-700">Cancelar</button>
+                                                        )}
 
                                                         <div className="flex flex-col justify-between">
                                                             <div className="flex flex-col justify-center gap-2 pr-6">
@@ -210,9 +253,17 @@ export default function Tarefas() {
                                                                 )}
                                                             </div>
                                                             <div className="flex justify-between mt-7">
-                                                                <p className="flex items-center gap-1">
+                                                                <p className="flex items-center gap-1 text-xs text-gray-600">
                                                                     <FaRegUserCircle />
-                                                                    {tarefa.usuariosIds?.join(", ") || "Sem responsável"}
+                                                                    {(() => {
+                                                                        const ids = tarefa.usuarioIds || [];
+                                                                        if (ids.length === 0) return 'Sem responsável';
+                                                                        const nomes = ids
+                                                                            .map(id => membros.find(m => m.usuarioId === id)?.nome || id)
+                                                                            .filter(Boolean);
+                                                                        if (nomes.length <= 2) return nomes.join(', ');
+                                                                        return nomes.slice(0,2).join(', ') + ` (+${nomes.length-2})`;
+                                                                    })()}
                                                                 </p>
                                                                 <p className="flex items-center gap-1">
                                                                     {formatarData(tarefa.prazoFinal)}
@@ -244,11 +295,12 @@ export default function Tarefas() {
                 onClose={() => setIsModalOpen(false)}
                 onSave={handleSave}
                 onDelete={handleDelete}
+                membrosProjeto={membros.map(m => ({ id: m.usuarioId, nome: m.nome, email: m.email }))}
                 initialData={editarTarefa ? {
                     id: editarTarefa.id,
                     name: editarTarefa.nome || "",
                     description: editarTarefa.descricao || "",
-                    responsible: editarTarefa.usuariosIds || [],
+                    responsible: editarTarefa.usuarioIds || [],
                     endDate: editarTarefa.prazoFinal ? editarTarefa.prazoFinal.split('T')[0] : "",
                     status: editarTarefa.status as Status,
                     comment: editarTarefa.comentario || "",

@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import BotaoGoogle from '../BotaoGoogle';
+// import BotaoGoogle from '../BotaoGoogle';
 import './LoginForm.css';
+import type { LoginDTO } from '../../types/api';
+import ApiService from '../../services/ApiService';
 
-interface LoginFormProps {
-  onSubmit?: (loginData: { email: string; password: string }) => void;
-}
+interface LoginFormProps {}
 
-const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
+const LoginForm: React.FC<LoginFormProps> = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [mensagem, setMensagem] = useState('');
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const navigate = useNavigate();
 
@@ -15,14 +17,40 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
     setLoginData({ ...loginData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (onSubmit) {
-      onSubmit(loginData);
-    } else {
-      console.log('Login data:', loginData);
+    setIsLoading(true);
+    setMensagem('');
+
+    try {
+      const dadosParaLogin: LoginDTO = {
+        email: loginData.email,
+        senha: loginData.password
+      }
+
+      const resposta = await ApiService.realizarLogin(dadosParaLogin);
+      setMensagem(resposta.mensagem);
+      console.log('Login realizado:', resposta);
+
+      const usuarioSessao = {
+        id: resposta.id,
+        nome: resposta.nome,
+        email: resposta.email
+      };
+
+      localStorage.setItem('usuarioLogado', JSON.stringify(usuarioSessao));
+      localStorage.setItem('usuario', JSON.stringify(usuarioSessao));
+      localStorage.setItem('usuarioId', usuarioSessao.id);
+
+      setTimeout(() => {
+        navigate('/projetos');
+      }, 1000);
+    } catch (error) {
+      console.error('Erro no login', error);
+      setMensagem('Email ou senha incorretos.');
+    } finally {
+      setIsLoading(false);
     }
-    navigate('/projetos');
   };
 
   return (
@@ -34,11 +62,20 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
       >
         <h1 className="text-[#1565C0] text-2xl font-bold mb-2">Entrar</h1>
 
-        <div className="social-icons flex my-4 w-full">
+        {/* <div className="social-icons flex my-4 w-full">
           <BotaoGoogle texto="Entrar com conta Google" />
-        </div>
+        </div> */}
+        {mensagem && (
+          <div className={`w-full p-2 rounded mb-3 text-center text-sm transition-colors duration-200 ${
+            mensagem.includes('sucesso')
+              ? 'bg-green-100 text-green-700'
+              : 'bg-red-100 text-red-700'
+          }`}>
+            {mensagem}
+          </div>
+        )}
 
-        <span className="text-[#1565C0] text-xs mb-2">ou use sua conta</span>
+        {/* <span className="text-[#1565C0] text-xs mb-2">ou use sua conta</span> */}
 
         <input
           type="email"
@@ -60,15 +97,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
           required
         />
 
-        <a
+        {/* <a
           href="#"
           className="text-[#FFD600] text-xs mb-2 hover:underline"
         >
           Esqueceu a senha?
-        </a>
+        </a> */}
 
         <button
           type="submit"
+          disabled={isLoading}
           className="font-bold px-8 py-2 rounded-lg mt-2 border-none"
           style={{
             background: 'linear-gradient(135deg, #ffaf00, #ffe0b2)',
@@ -76,7 +114,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
             boxShadow: '0 0 30px rgba(255,175,0,0.3)',
           }}
         >
-          Entrar
+          {isLoading ? 'Entrando...' : 'Entrar'}
         </button>
       </form>
     </div>
