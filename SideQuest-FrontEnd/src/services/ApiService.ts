@@ -92,6 +92,28 @@ class ApiService {
     async listarUsuarios(): Promise<UsuarioResumo[]> {
         return this.makeRequest('/usuarios');
     }
+
+    async listarTarefasDoProjeto(projetoId: string){
+        return this.makeRequest(`/listar/${projetoId}/tarefas`);
+    }
+
+    async criarTarefa(dados: { nome: string; descricao?: string; status: string; comentario?: string; prazoFinal?: string | null; projetoId: string; usuarioIds?: string[]; }) {
+        return this.makeRequest('/cadastrar/tarefas', {
+            method: 'POST',
+            body: JSON.stringify(dados)
+        });
+    }
+
+    async atualizarTarefa(id: string, dados: { nome: string; descricao?: string; status: string; comentario?: string; prazoFinal?: string | null; projetoId: string; usuarioIds?: string[]; }) {
+        return this.makeRequest(`/atualizar/tarefas/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ id, ...dados })
+        });
+    }
+
+    async excluirTarefa(id: string){
+        return this.makeRequest(`/excluir/tarefas/${id}`, { method: 'DELETE' });
+    }
 }
 
 export default new ApiService();
