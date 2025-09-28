@@ -32,11 +32,15 @@ const LoginForm: React.FC<LoginFormProps> = () => {
       setMensagem(resposta.mensagem);
       console.log('Login realizado:', resposta);
 
-      localStorage.setItem('usuario', JSON.stringify({
+      const usuarioSessao = {
         id: resposta.id,
         nome: resposta.nome,
         email: resposta.email
-      }));
+      };
+
+      localStorage.setItem('usuarioLogado', JSON.stringify(usuarioSessao));
+      localStorage.setItem('usuario', JSON.stringify(usuarioSessao));
+      localStorage.setItem('usuarioId', usuarioSessao.id);
 
       setTimeout(() => {
         navigate('/projetos');

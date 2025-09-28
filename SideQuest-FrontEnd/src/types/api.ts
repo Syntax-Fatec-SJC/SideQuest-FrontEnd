@@ -24,3 +24,9 @@ export interface UsuarioCompleto {
     projetosIds?: string[];
     tarefasIds?: string[];
 }
+export interface Projeto{
+    id: string;
+    nome: string;
+    status: string;
+    usuarioIds: string[];
+}

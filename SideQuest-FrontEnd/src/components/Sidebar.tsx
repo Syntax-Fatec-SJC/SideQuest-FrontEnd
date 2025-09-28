@@ -1,8 +1,9 @@
 import { 
   MdOutlineDashboard, MdChecklist, MdOutlineCalendarToday, MdOutlineAssessment, MdOutlinePeopleAlt, MdNotificationsNone, MdFolder, MdLogout 
 } from "react-icons/md";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import type { IconType } from "react-icons";
+import useAuth from '../hooks/useAuth';
 
 interface SidebarLinkProps {
   icon: IconType;
@@ -23,8 +24,14 @@ const SidebarLink = ({ icon: Icon, label, to = "#", onClick }: SidebarLinkProps)
 );
 
 export default function Sidebar() {
+  const navigate = useNavigate();
+  const { logout, usuario } = useAuth();
+
   const handleLogout = () => {
-    console.log("Sair da conta");
+    if (window.confirm('Deseja realmente sair?')) {
+      logout();
+      navigate('/acesso');
+    }
   };
 
   return (
@@ -34,8 +41,12 @@ export default function Sidebar() {
         <div className="bg-gray-300 rounded-full w-20 h-20 flex items-center justify-center">
           <span className="text-white text-2xl">R</span>
         </div>
-        <h1 className="font-bold text-xl mt-2">Nome do Usuário</h1>
-        <p className="text-sm text-gray-500">Cargo</p>
+        <h1 className="font-bold text-xl mt-2 truncate max-w-[160px]" title={usuario?.nome || 'Usuário'}>
+          {usuario?.nome || 'Usuário'}
+        </h1>
+        <p className="text-sm text-gray-500 truncate max-w-[160px]" title={usuario?.email || ''}>
+          {usuario?.email || 'Sem email'}
+        </p>
       </div>
 
       <div className="flex flex-col gap-2 px-4">
@@ -51,7 +62,7 @@ export default function Sidebar() {
 
       <div className="flex flex-col gap-2 px-4 mb-4">
         <SidebarLink icon={MdFolder} label="Projetos" to="/projetos" />
-        <SidebarLink icon={MdLogout} label="Sair" onClick={handleLogout} />
+        <SidebarLink icon={MdLogout} label="Sair" onClick={handleLogout} to="/acesso" />
       </div>
     </div>
   );

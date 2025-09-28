@@ -1,4 +1,4 @@
-import type { LoginDTO, LoginResponseDTO, UsuarioCompleto, UsuarioDTO } from "../types/api";
+import type { LoginDTO, LoginResponseDTO, Projeto, UsuarioCompleto, UsuarioDTO } from "../types/api";
 
 const BASE_URL = 'http://localhost:8080';
 
@@ -36,6 +36,40 @@ class ApiService {
             method: 'POST',
             body: JSON.stringify(dadosLogin)
         })
+    }
+
+    async listarProjetosDoUsuario(usuarioId: string): Promise<Projeto[]>{
+        return this.makeRequest(`/listar/${usuarioId}/projetos`);
+    }
+
+    async criarProjeto(usuarioIdCriador: string, nome: string): Promise<Projeto>{
+        return this.makeRequest(`/cadastrar/projetos?usuarioIdCriador=${usuarioIdCriador}`, {
+            method: 'POST',
+            body: JSON.stringify({
+                nome,
+                status: 'ATIVO'
+            })
+        })
+    }
+
+    async excluirProjeto(id: string): Promise<void>{
+        const response = await fetch(`http://localhost:8080/excluir/projetos/${id}`,{
+            method: 'DELETE'
+        });
+        if (!response.ok){
+            const tx = await response.text();
+            throw new Error(`Erro HTTP ${response.status}: ${tx}`);
+        }
+    }
+
+    async atualizarProjeto(id: string, dados: Partial<Pick<Projeto,'nome'|'status'|'usuarioIds'>>): Promise<Projeto> {
+    return this.makeRequest(`/atualizar/projetos/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+        id,
+        ...dados
+        })
+    });
     }
 }
 
