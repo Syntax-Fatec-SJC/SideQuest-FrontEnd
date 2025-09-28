@@ -30,3 +30,15 @@ export interface Projeto{
     status: string;
     usuarioIds: string[];
 }
+export interface MembroProjeto {
+    usuarioId: string;
+    nome: string;
+    email: string;
+    criador: boolean; 
+}
+
+export interface UsuarioResumo {
+    id: string;
+    nome: string;
+    email: string;
+}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import { FaFolderPlus, FaFolder, FaTrash, FaSyncAlt } from "react-icons/fa";
 import CriarProjetoModal from "../components/CriarProjetoModal";
 import Sidebar from "../components/Sidebar";
@@ -13,6 +14,7 @@ interface Projeto {
 }
 
 export default function GerenciarProjetos() {
+  const navigate = useNavigate();
   const [projetos, setProjetos] = useState<Projeto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -103,6 +105,8 @@ export default function GerenciarProjetos() {
   function selecionar(id: string) {
     setProjetoSelecionadoId(id);
     localStorage.setItem("projetoSelecionadoId", id);
+    // Redireciona direto para tarefas do projeto
+    navigate('/tarefas');
   }
 
   const estadoPrincipal = (() => {

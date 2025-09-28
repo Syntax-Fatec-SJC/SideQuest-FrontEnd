@@ -23,17 +23,34 @@ const API_URL = 'http://localhost:8080';
 
 export default function Tarefas() {
     const [tarefas, setTarefas] = useState<Tarefa[]>([]);
+    const [projetoId, setProjetoId] = useState<string | null>(() => localStorage.getItem('projetoSelecionadoId'));
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editarTarefa, setEditarTarefa] = useState<Tarefa | null>(null);
 
     // Carregar tarefas do backend
+    // Ouve mudanças do projeto selecionado (outra página selecionou outro projeto)
     useEffect(() => {
-        carregarTarefas();
+        const handler = (e: StorageEvent) => {
+            if (e.key === 'projetoSelecionadoId') {
+                const novo = localStorage.getItem('projetoSelecionadoId');
+                setProjetoId(novo);
+            }
+        };
+        window.addEventListener('storage', handler);
+        return () => window.removeEventListener('storage', handler);
     }, []);
 
-    async function carregarTarefas() {
+    useEffect(() => {
+        if (projetoId) {
+            carregarTarefas(projetoId);
+        } else {
+            setTarefas([]);
+        }
+    }, [projetoId]);
+
+    async function carregarTarefas(pid: string) {
         try {
-            const response = await fetch(`${API_URL}/listar/tarefas`);
+            const response = await fetch(`${API_URL}/projetos/${pid}/tarefas`);
             if (response.ok) {
                 const data: Tarefa[] = await response.json();
                 setTarefas(data);
@@ -78,7 +95,7 @@ export default function Tarefas() {
             status: data.status,
             comentario: data.comment,
             prazoFinal: data.endDate ? new Date(data.endDate).toISOString() : null,
-            projetoId: null,
+            projetoId: projetoId,
             usuariosIds: data.responsible
         };
 
@@ -101,7 +118,7 @@ export default function Tarefas() {
             }
 
             if (response.ok) {
-                await carregarTarefas();
+                if (projetoId) await carregarTarefas(projetoId);
                 setIsModalOpen(false);
                 setEditarTarefa(null);
             }
@@ -117,7 +134,7 @@ export default function Tarefas() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: tarefaId })
             });
-            await carregarTarefas();
+            if (projetoId) await carregarTarefas(projetoId);
         } catch (error) {
             console.error('Erro ao excluir:', error);
         }

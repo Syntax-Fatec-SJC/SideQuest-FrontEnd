@@ -1,4 +1,4 @@
-import type { LoginDTO, LoginResponseDTO, Projeto, UsuarioCompleto, UsuarioDTO } from "../types/api";
+import type { LoginDTO, LoginResponseDTO, Projeto, UsuarioCompleto, UsuarioDTO, MembroProjeto, UsuarioResumo } from "../types/api";
 
 const BASE_URL = 'http://localhost:8080';
 
@@ -17,7 +17,12 @@ class ApiService {
                 const errorData = await response.text();
                 throw new Error(`Erro HTTP ${response.status}: ${errorData}`)
             }
-            return await response.json();
+            if (response.status === 204) return null;
+            const contentType = response.headers.get('Content-Type') || '';
+            if (contentType.includes('application/json')) {
+                return await response.json();
+            }
+            return await response.text();
         } catch (error) {
             console.error('Erro na requisição:', error);
             throw error;
@@ -70,6 +75,22 @@ class ApiService {
         ...dados
         })
     });
+    }
+
+    async listarMembrosProjeto(projetoId: string): Promise<MembroProjeto[]> {
+        return this.makeRequest(`/listar/${projetoId}/membros`);
+    }
+
+    async adicionarMembroProjeto(projetoId: string, usuarioId: string): Promise<void> {
+        await this.makeRequest(`/adicionar/${projetoId}/membros/${usuarioId}`, { method: 'POST' });
+    }
+
+    async removerMembroProjeto(projetoId: string, usuarioId: string): Promise<void> {
+        await this.makeRequest(`/excluir/${projetoId}/membros/${usuarioId}`, { method: 'DELETE' });
+    }
+
+    async listarUsuarios(): Promise<UsuarioResumo[]> {
+        return this.makeRequest('/usuarios');
     }
 }
 

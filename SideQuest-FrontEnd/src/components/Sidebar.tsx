@@ -2,6 +2,7 @@ import {
   MdOutlineDashboard, MdChecklist, MdOutlineCalendarToday, MdOutlineAssessment, MdOutlinePeopleAlt, MdNotificationsNone, MdFolder, MdLogout 
 } from "react-icons/md";
 import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from 'react';
 import type { IconType } from "react-icons";
 import useAuth from '../hooks/useAuth';
 
@@ -26,12 +27,27 @@ const SidebarLink = ({ icon: Icon, label, to = "#", onClick }: SidebarLinkProps)
 export default function Sidebar() {
   const navigate = useNavigate();
   const { logout, usuario } = useAuth();
+  const [projetoSelecionadoId, setProjetoSelecionadoId] = useState<string | null>(() => localStorage.getItem('projetoSelecionadoId'));
+
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key === 'projetoSelecionadoId') {
+        setProjetoSelecionadoId(localStorage.getItem('projetoSelecionadoId'));
+      }
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, []);
 
   const handleLogout = () => {
-    if (window.confirm('Deseja realmente sair?')) {
-      logout();
-      navigate('/acesso');
-    }
+    logout();
+    navigate('/acesso');
+  };
+
+  const handleResetProjeto = () => {
+    localStorage.removeItem('projetoSelecionadoId');
+    setProjetoSelecionadoId(null);
+    navigate('/projetos');
   };
 
   return (
@@ -51,17 +67,22 @@ export default function Sidebar() {
 
       <div className="flex flex-col gap-2 px-4">
         <SidebarLink icon={MdOutlineDashboard} label="Dashboard" to="/dashboard" />
-        <SidebarLink icon={MdChecklist} label="Tarefas" to="/tarefas" />
+        {projetoSelecionadoId && (
+          <>
+            <SidebarLink icon={MdChecklist} label="Tarefas" to="/tarefas" />
+            <SidebarLink icon={MdOutlinePeopleAlt} label="Membros" to="/membros" />
+          </>
+        )}
+        {/* Outros links permanecem sempre visíveis, mas podem ser condicionados futuramente */}
         <SidebarLink icon={MdOutlineCalendarToday} label="Calendário" to="/calendario" />
         <SidebarLink icon={MdOutlineAssessment} label="Relatórios" to="/relatorios" />
-        <SidebarLink icon={MdOutlinePeopleAlt} label="Membros" to="/membros" />
         <SidebarLink icon={MdNotificationsNone} label="Avisos" to="/avisos" />
       </div>
 
       <div className="flex-1" />
 
       <div className="flex flex-col gap-2 px-4 mb-4">
-        <SidebarLink icon={MdFolder} label="Projetos" to="/projetos" />
+        <SidebarLink icon={MdFolder} label="Projetos" to="/projetos" onClick={handleResetProjeto} />
         <SidebarLink icon={MdLogout} label="Sair" onClick={handleLogout} to="/acesso" />
       </div>
     </div>
