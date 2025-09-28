@@ -68,8 +68,8 @@ const LoginForm: React.FC<LoginFormProps> = () => {
         {mensagem && (
           <div className={`w-full p-2 rounded mb-3 text-center text-sm transition-colors duration-200 ${
             mensagem.includes('sucesso')
-              ? 'bg-green-100 text-green-700'
-              : 'bg-red-100 text-red-700'
+              ? ' text-[#1565C0] '
+              : ' text-red-700'
           }`}>
             {mensagem}
           </div>

@@ -42,8 +42,8 @@ export default function GerenciarProjetos() {
 
   async function carregarProjetos() {
     if (!usuarioLogadoId) {
-      setTimeout(() => { window.location.href = '/acesso'; }, 1500);
-      setErro("Usuário não identificado. Redirecionando para login...");
+      setErro("Sessão não identificada ainda. Caso tenha acabado de cadastrar, aguarde alguns segundos ou faça login novamente.");
+      setLoading(false);
       return;
     }
     setLoading(true);

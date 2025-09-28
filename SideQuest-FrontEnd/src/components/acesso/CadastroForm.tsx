@@ -10,6 +10,7 @@ function CadastroForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [mensagem, setMensagem] = useState('');
   const [showSenha, setShowSenha] = useState(false);
+  const [cadastroConcluido, setCadastroConcluido] = useState(false);
   const [cadastroData, setCadastroData] = useState({
     nome: "",
     email: "",
@@ -34,12 +35,9 @@ function CadastroForm() {
       };
 
       const usuarioCriado = await ApiService.cadastrarUsuario(dadosParaCadastro);
-      setMensagem('Usuário cadastrado com sucesso!');
-      console.log('Usuário criado:', usuarioCriado)
-
-      setTimeout(() => {
-        navigate('/projetos');
-      }, 2000);
+      console.log('Usuário criado:', usuarioCriado);
+      setMensagem('Usuário cadastrado com sucesso! Agora faça login para continuar.');
+      setCadastroConcluido(true);
     } catch (error) {
       console.error('Erro no cadastro:', error);
       setMensagem('Erro ao cadastrar usuário. Tente novamente.');
@@ -67,61 +65,69 @@ function CadastroForm() {
         {mensagem && (
           <div className={`w-full p-2 rounded mb-3 text-center text-sm transition-colors duration-200 ${
             mensagem.includes('sucesso')
-              ? 'bg-green-100 text-green-700'
-              : 'bg-red-100 text-red-700'
+              ? ' text-[#1565C0]'
+              : ' text-red-700'
           }`}>
             {mensagem}
           </div>
         )}
 
-        <div className="w-full space-y-4">
-          <input
-            name="nome"
-            type="text"
-            value={cadastroData.nome}
-            onChange={handleChange}
-            placeholder="Nome"
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ffaf00] text-sm text-gray-700"
-          />
-
-          <input
-            name="email"
-            type="email"
-            value={cadastroData.email}
-            onChange={handleChange}
-            placeholder="E-mail"
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ffaf00] text-sm text-gray-700"
-          />
-
-          <div className="relative w-full">
+        {!cadastroConcluido && (
+          <div className="w-full space-y-4">
             <input
-              name="senha"
-              type={showSenha ? "text" : "password"}
-              value={cadastroData.senha}
+              name="nome"
+              type="text"
+              value={cadastroData.nome}
               onChange={handleChange}
-              placeholder="Senha"
+              placeholder="Nome"
               required
-              className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ffaf00] text-sm text-gray-700"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ffaf00] text-sm text-gray-700"
+              disabled={cadastroConcluido}
             />
-            <button
-              type="button"
-              onClick={() => setShowSenha(!showSenha)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center justify-center text-gray-500 hover:text-gray-700"
-            >
-              {showSenha ? <HiEye size={18} />  : <HiEyeOff size={18} />}
-            </button>
-          </div>
-        </div>
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="btn-main"
-        >
-          {isLoading ? 'Cadastrando...' : 'Criar Conta'}
-        </button>
+            <input
+              name="email"
+              type="email"
+              value={cadastroData.email}
+              onChange={handleChange}
+              placeholder="E-mail"
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ffaf00] text-sm text-gray-700"
+              disabled={cadastroConcluido}
+            />
+
+            <div className="relative w-full">
+              <input
+                name="senha"
+                type={showSenha ? "text" : "password"}
+                value={cadastroData.senha}
+                onChange={handleChange}
+                placeholder="Senha"
+                required
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ffaf00] text-sm text-gray-700"
+                disabled={cadastroConcluido}
+              />
+              <button
+                type="button"
+                onClick={() => setShowSenha(!showSenha)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center justify-center text-gray-500 hover:text-gray-700"
+                disabled={cadastroConcluido}
+              >
+                {showSenha ? <HiEye size={18} />  : <HiEyeOff size={18} />}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!cadastroConcluido && (
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="btn-main"
+          >
+            {isLoading ? 'Cadastrando...' : 'Criar Conta'}
+          </button>
+        )}
       </form>
     </div>
   );
