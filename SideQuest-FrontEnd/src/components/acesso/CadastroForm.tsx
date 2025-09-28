@@ -1,14 +1,15 @@
 import { useState } from "react";
-import BotaoGoogle from "../BotaoGoogle";
+import { useNavigate } from "react-router-dom";
+// import BotaoGoogle from "../BotaoGoogle";
 import { HiEye, HiEyeOff } from "react-icons/hi";
-import { authService, ApiError } from '../../services/authService';
-import type { CadastroData } from '../../types/auth';
+import type { UsuarioDTO } from "../../types/api";
+import ApiService from "../../services/ApiService";
 
-interface CadastroProps {
-  onSubmit?: (cadastroData: CadastroData) => void;
-}
 
-function CadastroForm({ onSubmit }: CadastroProps) {
+function CadastroForm() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [mensagem, setMensagem] = useState('');
+
   const [showSenha, setShowSenha] = useState(false);
   const [cadastroData, setCadastroData] = useState<CadastroData>({
     nome: "",
@@ -30,54 +31,28 @@ function CadastroForm({ onSubmit }: CadastroProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-    setFieldErrors({});
+    setIsLoading(true);
+    setMensagem('');
 
     try {
-      console.log('Iniciando cadastro para email:', cadastroData.email);
-      
-      // Se há uma função onSubmit personalizada, usa ela
-      if (onSubmit) {
-        onSubmit(cadastroData);
-        return;
-      }
+      const dadosParaCadastro: UsuarioDTO = {
+        nome: cadastroData.nome,
+        email: cadastroData.email,
+        senha: cadastroData.senha
+      };
 
-      // Faz cadastro via API
-      console.log('Fazendo requisição de cadastro...');
-      const response = await authService.cadastro(cadastroData);
-      console.log('Cadastro realizado com sucesso:', response.mensagem);
-      
-      // Mostra mensagem de sucesso e limpa o formulário
-      alert(response.mensagem);
-      setCadastroData({ nome: "", email: "", senha: "" });
-      setLoading(false);
-      
-    } catch (err) {
-      console.error('Erro no cadastro:', err);
-      setLoading(false); // Só para o loading se houver erro
-      
-      if (err instanceof ApiError) {
-        // Se o erro contém campos específicos (validação)
-        if (err.data && typeof err.data === 'object') {
-          const errors: Record<string, string> = {};
-          Object.keys(err.data).forEach(key => {
-            if (key !== 'message' && key !== 'erro' && err.data && err.data[key]) {
-              errors[key] = err.data[key] as string;
-            }
-          });
-          
-          if (Object.keys(errors).length > 0) {
-            setFieldErrors(errors);
-          } else {
-            setError(err.message);
-          }
-        } else {
-          setError(err.message);
-        }
-      } else {
-        setError('Erro inesperado. Tente novamente.');
-      }
+      const usuarioCriado = await ApiService.cadastrarUsuario(dadosParaCadastro);
+      setMensagem('Usuário cadastrado com sucesso!');
+      console.log('Usuário criado:', usuarioCriado)
+
+      setTimeout(() => {
+        navigate('/projetos');
+      }, 2000);
+    } catch (error) {
+      console.error('Erro no cadastro:', error);
+      setMensagem('Erro ao cadastrar usuário. Tente novamente.');
+    } finally {
+      setIsLoading(false)
     }
   };
 
@@ -89,7 +64,7 @@ function CadastroForm({ onSubmit }: CadastroProps) {
       >
         <h1 className="text-[#1565C0] text-2xl font-bold mb-4">Cadastrar</h1>
 
-        <BotaoGoogle texto="Criar com Google" />
+          {/* <BotaoGoogle texto="Criar com Google" /> */}
 
         <div className="flex items-center my-4 w-full">
           <div className="flex-grow h-px bg-gray-300" />
@@ -97,11 +72,26 @@ function CadastroForm({ onSubmit }: CadastroProps) {
           <div className="flex-grow h-px bg-gray-300" />
         </div>
 
-        {error && (
-          <div className="w-full mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
-            {error}
+        {mensagem && (
+          <div className={`w-full p-2 rounded mb-3 text-center text-sm transition-colors duration-200 ${
+            mensagem.includes('sucesso')
+              ? 'bg-green-100 text-green-700'
+              : 'bg-red-100 text-red-700'
+          }`}>
+            {mensagem}
           </div>
         )}
+
+        <div className="w-full space-y-4">
+          <input
+            name="nome"
+            type="text"
+            value={cadastroData.nome}
+            onChange={handleChange}
+            placeholder="Nome"
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ffaf00] text-sm text-gray-700"
+          />
 
         <div className="w-full space-y-4">
           <div>
@@ -171,10 +161,10 @@ function CadastroForm({ onSubmit }: CadastroProps) {
 
         <button
           type="submit"
-          disabled={loading}
-          className={`btn-main mt-6 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={isLoading}
+          className="btn-main"
         >
-          {loading ? 'Criando...' : 'Criar Conta'}
+          {isLoading ? 'Cadastrando...' : 'Criar Conta'}
         </button>
       </form>
     </div>

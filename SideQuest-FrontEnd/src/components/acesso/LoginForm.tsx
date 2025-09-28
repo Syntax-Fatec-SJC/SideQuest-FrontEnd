@@ -1,20 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import BotaoGoogle from '../BotaoGoogle';
-import { authService, ApiError } from '../../services/authService';
-import { tokenUtils, userUtils } from '../../utils/auth';
-import type { LoginData } from '../../types/auth';
+// import BotaoGoogle from '../BotaoGoogle';
+
 import './LoginForm.css';
+import type { LoginDTO } from '../../types/api';
+import ApiService from '../../services/ApiService';
 
-interface LoginFormProps {
-  onSubmit?: (loginData: LoginData) => void;
-  onForgotPassword?: () => void;
-}
+interface LoginFormProps {}
 
-const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, onForgotPassword }) => {
-  const [loginData, setLoginData] = useState<LoginData>({ email: '', senha: '' });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>('');
+const LoginForm: React.FC<LoginFormProps> = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [mensagem, setMensagem] = useState('');
+  const [loginData, setLoginData] = useState({ email: '', password: '' });
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -25,34 +22,37 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, onForgotPassword }) => 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
+    setIsLoading(true);
+    setMensagem('');
 
     try {
-      // Se há uma função onSubmit personalizada, usa ela
-      if (onSubmit) {
-        onSubmit(loginData);
-        return;
+      const dadosParaLogin: LoginDTO = {
+        email: loginData.email,
+        senha: loginData.password
       }
 
-      // Faz login via API
-      const response = await authService.login(loginData);
-      
-      // Salva token e dados do usuário
-      tokenUtils.saveToken(response.token);
-      userUtils.saveUser({ id: response.id, nome: response.nome });
-      
-      // Redireciona para projetos
-      navigate('/projetos');
-      
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-      } else {
-        setError('Erro inesperado. Tente novamente.');
-      }
+      const resposta = await ApiService.realizarLogin(dadosParaLogin);
+      setMensagem(resposta.mensagem);
+      console.log('Login realizado:', resposta);
+
+      const usuarioSessao = {
+        id: resposta.id,
+        nome: resposta.nome,
+        email: resposta.email
+      };
+
+      localStorage.setItem('usuarioLogado', JSON.stringify(usuarioSessao));
+      localStorage.setItem('usuario', JSON.stringify(usuarioSessao));
+      localStorage.setItem('usuarioId', usuarioSessao.id);
+
+      setTimeout(() => {
+        navigate('/projetos');
+      }, 1000);
+    } catch (error) {
+      console.error('Erro no login', error);
+      setMensagem('Email ou senha incorretos.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -65,11 +65,20 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, onForgotPassword }) => 
         >
         <h1 className="text-[#1565C0] text-2xl font-bold mb-2">Entrar</h1>
 
-        <div className="social-icons flex my-4 w-full">
+        {/* <div className="social-icons flex my-4 w-full">
           <BotaoGoogle texto="Entrar com conta Google" />
-        </div>
+        </div> */}
+        {mensagem && (
+          <div className={`w-full p-2 rounded mb-3 text-center text-sm transition-colors duration-200 ${
+            mensagem.includes('sucesso')
+              ? 'bg-green-100 text-green-700'
+              : 'bg-red-100 text-red-700'
+          }`}>
+            {mensagem}
+          </div>
+        )}
 
-        <span className="text-[#1565C0] text-xs mb-2">ou use sua conta</span>
+        {/* <span className="text-[#1565C0] text-xs mb-2">ou use sua conta</span> */}
 
         {error && (
           <div className="w-full mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
@@ -99,27 +108,25 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, onForgotPassword }) => 
           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
         />
 
-        <button
-          type="button"
-          onClick={onForgotPassword}
+        {/* <a
+          href="#"
           className="text-[#FFD600] text-xs mb-2 hover:underline"
         >
           Esqueceu a senha?
-        </button>
+        </a> */}
 
         <button
           type="submit"
-          disabled={loading}
-          className={`font-bold px-8 py-2 rounded-lg mt-2 border-none ${
-            loading ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
+          disabled={isLoading}
+          className="font-bold px-8 py-2 rounded-lg mt-2 border-none"
+
           style={{
             background: 'linear-gradient(135deg, #ffaf00, #ffe0b2)',
             color: '#0a192f',
             boxShadow: '0 0 30px rgba(255,175,0,0.3)',
           }}
         >
-          {loading ? 'Entrando...' : 'Entrar'}
+          {isLoading ? 'Entrando...' : 'Entrar'}
         </button>
       </form>
     </div>
