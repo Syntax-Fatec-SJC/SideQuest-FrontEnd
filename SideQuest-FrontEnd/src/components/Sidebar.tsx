@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from 'react';
 import type { IconType } from "react-icons";
 import useAuth from '../hooks/useAuth';
+import { BiSolidUser } from "react-icons/bi";
 
 interface SidebarLinkProps {
   icon: IconType;
@@ -55,7 +56,7 @@ export default function Sidebar() {
       
       <div className="flex flex-col items-center mt-10 mb-4">
         <div className="bg-gray-300 rounded-full w-20 h-20 flex items-center justify-center">
-          <span className="text-white text-2xl">R</span>
+          <span className="text-black text-5xl"><BiSolidUser /></span>
         </div>
         <h1 className="font-bold text-xl mt-2 truncate max-w-[160px]" title={usuario?.nome || 'Usuário'}>
           {usuario?.nome || 'Usuário'}
@@ -66,7 +67,7 @@ export default function Sidebar() {
       </div>
 
       <div className="flex flex-col gap-2 px-4">
-        <SidebarLink icon={MdOutlineDashboard} label="Dashboard" to="/dashboard" />
+        <SidebarLink icon={MdOutlineDashboard} label="Dashboard (Dev.)" to="/projetos" /> {/* Mudar Futuramente*/}
         {projetoSelecionadoId && (
           <>
             <SidebarLink icon={MdChecklist} label="Tarefas" to="/tarefas" />
@@ -74,9 +75,9 @@ export default function Sidebar() {
           </>
         )}
         {/* Outros links permanecem sempre visíveis, mas podem ser condicionados futuramente */}
-        <SidebarLink icon={MdOutlineCalendarToday} label="Calendário" to="/calendario" />
-        <SidebarLink icon={MdOutlineAssessment} label="Relatórios" to="/relatorios" />
-        <SidebarLink icon={MdNotificationsNone} label="Avisos" to="/avisos" />
+        <SidebarLink icon={MdOutlineCalendarToday} label="Calendário (Dev.)" to="/projetos" /> {/* Mudar Futuramente*/}
+        <SidebarLink icon={MdOutlineAssessment} label="Relatórios (Dev.)" to="/projetos" /> {/* Mudar Futuramente*/}
+        <SidebarLink icon={MdNotificationsNone} label="Avisos (Dev.)" to="/projetos" /> {/* Mudar Futuramente*/}
       </div>
 
       <div className="flex-1" />

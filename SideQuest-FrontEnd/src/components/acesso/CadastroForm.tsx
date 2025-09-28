@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import BotaoGoogle from "../BotaoGoogle";
+// import BotaoGoogle from "../BotaoGoogle";
 import { HiEye, HiEyeOff } from "react-icons/hi";
 import type { UsuarioDTO } from "../../types/api";
 import ApiService from "../../services/ApiService";
@@ -56,13 +56,23 @@ function CadastroForm() {
       >
         <h1 className="text-[#1565C0] text-2xl font-bold mb-4">Cadastrar</h1>
 
-          <BotaoGoogle texto="Criar com Google" />
+          {/* <BotaoGoogle texto="Criar com Google" /> */}
 
         <div className="flex items-center my-4 w-full">
           <div className="flex-grow h-px bg-gray-300" />
           <span className="mx-2 text-gray-400 text-sm">ou</span>
           <div className="flex-grow h-px bg-gray-300" />
         </div>
+
+        {mensagem && (
+          <div className={`w-full p-2 rounded mb-3 text-center text-sm transition-colors duration-200 ${
+            mensagem.includes('sucesso')
+              ? 'bg-green-100 text-green-700'
+              : 'bg-red-100 text-red-700'
+          }`}>
+            {mensagem}
+          </div>
+        )}
 
         <div className="w-full space-y-4">
           <input
@@ -113,15 +123,6 @@ function CadastroForm() {
           {isLoading ? 'Cadastrando...' : 'Criar Conta'}
         </button>
       </form>
-      {mensagem && (
-        <div className={`p-2 rounded mb-4 text-center ${
-          mensagem.includes('sucesso') 
-            ? 'bg-green-100 text-green-700' 
-            : 'bg-red-100 text-red-700'
-        }`}>
-          {mensagem}
-        </div>
-      )}
     </div>
   );
 }

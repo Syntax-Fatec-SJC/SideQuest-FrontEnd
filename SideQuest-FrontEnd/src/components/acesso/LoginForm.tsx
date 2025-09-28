@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import BotaoGoogle from '../BotaoGoogle';
+// import BotaoGoogle from '../BotaoGoogle';
 import './LoginForm.css';
 import type { LoginDTO } from '../../types/api';
 import ApiService from '../../services/ApiService';
@@ -62,11 +62,20 @@ const LoginForm: React.FC<LoginFormProps> = () => {
       >
         <h1 className="text-[#1565C0] text-2xl font-bold mb-2">Entrar</h1>
 
-        <div className="social-icons flex my-4 w-full">
+        {/* <div className="social-icons flex my-4 w-full">
           <BotaoGoogle texto="Entrar com conta Google" />
-        </div>
+        </div> */}
+        {mensagem && (
+          <div className={`w-full p-2 rounded mb-3 text-center text-sm transition-colors duration-200 ${
+            mensagem.includes('sucesso')
+              ? 'bg-green-100 text-green-700'
+              : 'bg-red-100 text-red-700'
+          }`}>
+            {mensagem}
+          </div>
+        )}
 
-        <span className="text-[#1565C0] text-xs mb-2">ou use sua conta</span>
+        {/* <span className="text-[#1565C0] text-xs mb-2">ou use sua conta</span> */}
 
         <input
           type="email"
@@ -88,12 +97,12 @@ const LoginForm: React.FC<LoginFormProps> = () => {
           required
         />
 
-        <a
+        {/* <a
           href="#"
           className="text-[#FFD600] text-xs mb-2 hover:underline"
         >
           Esqueceu a senha?
-        </a>
+        </a> */}
 
         <button
           type="submit"
@@ -108,15 +117,6 @@ const LoginForm: React.FC<LoginFormProps> = () => {
           {isLoading ? 'Entrando...' : 'Entrar'}
         </button>
       </form>
-      {mensagem && (
-        <div className={`p-2 rounded mb-4 text-center ${
-          mensagem.includes('sucesso') 
-            ? 'bg-green-100 text-green-700' 
-            : 'bg-red-100 text-red-700'
-        }`}>
-          {mensagem}
-        </div>
-      )}
     </div>
   );
 };
