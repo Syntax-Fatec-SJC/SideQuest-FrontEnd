@@ -4,6 +4,8 @@ import Projetos from './pages/Projetos';
 import Membros from './Membros';
 import Acesso from './pages/Acesso';
 import Tarefas from './Tarefas';
+import AuthCallback from './pages/AuthCallback';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   return (

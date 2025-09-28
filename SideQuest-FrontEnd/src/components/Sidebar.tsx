@@ -14,16 +14,25 @@ interface SidebarLinkProps {
   onClick?: () => void;    
 }
 
-const SidebarLink = ({ icon: Icon, label, to = "#", onClick }: SidebarLinkProps) => (
-  <Link
-    to={to}
-    onClick={onClick}
-    className="flex items-center gap-2 p-2 hover:bg-gray-200 rounded"
-  >
-    <Icon size={20} />
-    {label}
-  </Link>
-);
+const SidebarLink = ({ icon: Icon, label, to = "#", onClick }: SidebarLinkProps) => {
+  const handleClick = (e: React.MouseEvent) => {
+    if (onClick) {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
+  return (
+    <Link
+      to={to}
+      onClick={handleClick}
+      className="flex items-center gap-2 p-2 hover:bg-gray-200 rounded"
+    >
+      <Icon size={20} />
+      {label}
+    </Link>
+  );
+};
 
 export default function Sidebar() {
   const navigate = useNavigate();

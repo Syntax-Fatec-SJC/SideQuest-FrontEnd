@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 // import BotaoGoogle from '../BotaoGoogle';
+
 import './LoginForm.css';
 import type { LoginDTO } from '../../types/api';
 import ApiService from '../../services/ApiService';
@@ -15,6 +16,8 @@ const LoginForm: React.FC<LoginFormProps> = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLoginData({ ...loginData, [e.target.name]: e.target.value });
+    // Limpa o erro quando o usuário começa a digitar
+    if (error) setError('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,10 +59,10 @@ const LoginForm: React.FC<LoginFormProps> = () => {
   return (
     <div className="form-container sign-in w-full flex items-center justify-center">
       <form
-        onSubmit={handleSubmit}
-        className="bg-white rounded-2xl p-6 sm:p-8 flex flex-col items-center w-full max-w-[400px] shadow-lg"
-        style={{ boxShadow: '0 20px 40px -10px rgba(10,25,47,0.8)' }}
-      >
+          onSubmit={handleSubmit}
+          className="bg-white rounded-2xl p-6 sm:p-8 flex flex-col items-center w-full max-w-[400px] shadow-lg"
+          style={{ boxShadow: '0 20px 40px -10px rgba(10,25,47,0.8)' }}
+        >
         <h1 className="text-[#1565C0] text-2xl font-bold mb-2">Entrar</h1>
 
         {/* <div className="social-icons flex my-4 w-full">
@@ -77,6 +80,12 @@ const LoginForm: React.FC<LoginFormProps> = () => {
 
         {/* <span className="text-[#1565C0] text-xs mb-2">ou use sua conta</span> */}
 
+        {error && (
+          <div className="w-full mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
         <input
           type="email"
           name="email"
@@ -85,16 +94,18 @@ const LoginForm: React.FC<LoginFormProps> = () => {
           placeholder="Email"
           className="bg-[#E3F2FD] text-[#1565C0] rounded-lg px-4 py-2 mb-2 w-full border border-[#1565C0] min-w-[180px] sm:min-w-[220px]"
           required
+          disabled={loading}
         />
 
-        <input
+                <input
+          id="senha"
+          name="senha"
           type="password"
-          name="password"
-          value={loginData.password}
-          onChange={handleChange}
           placeholder="Senha"
-          className="bg-[#E3F2FD] text-[#1565C0] rounded-lg px-4 py-2 mb-2 w-full border border-[#1565C0] min-w-[180px] sm:min-w-[220px]"
+          value={loginData.senha}
+          onChange={(e) => setLoginData({ ...loginData, senha: e.target.value })}
           required
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
         />
 
         {/* <a
@@ -108,6 +119,7 @@ const LoginForm: React.FC<LoginFormProps> = () => {
           type="submit"
           disabled={isLoading}
           className="font-bold px-8 py-2 rounded-lg mt-2 border-none"
+
           style={{
             background: 'linear-gradient(135deg, #ffaf00, #ffe0b2)',
             color: '#0a192f',
