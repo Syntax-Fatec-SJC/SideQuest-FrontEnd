@@ -1,12 +1,17 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 // import BotaoGoogle from "../BotaoGoogle";
 import { HiEye, HiEyeOff } from "react-icons/hi";
-import type { UsuarioDTO } from "../../types/api";
-import ApiService from "../../services/ApiService";
+// import type { UsuarioDTO } from "../../types/api";
+import type { Usuario } from "./type";
+import { usuarioService } from "./UsuarioService";
+import type { SignupHandler } from './type';
 
+interface CadastroFormProps {
+  onSignup?: SignupHandler;
+}
 
-function CadastroForm() {
+function CadastroForm({ onSignup }: CadastroFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [mensagem, setMensagem] = useState('');
   const [showSenha, setShowSenha] = useState(false);
@@ -16,7 +21,7 @@ function CadastroForm() {
     email: "",
     senha: "",
   });
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCadastroData({ ...cadastroData, [e.target.name]: e.target.value });
@@ -24,17 +29,31 @@ function CadastroForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setMensagem('');
 
+    if (onSignup) {
+      try {
+        const handled = await Promise.resolve(onSignup(cadastroData));
+        if (handled === true) {
+          // parent handled submission; stop here
+          return;
+        }
+      } catch (err) {
+        console.error('onSignup handler threw an error:', err);
+        // continue with internal flow
+      }
+    }
+
+    setIsLoading(true);
+
     try {
-      const dadosParaCadastro: UsuarioDTO = {
+      const dadosParaCadastro: Usuario = {
         nome: cadastroData.nome,
         email: cadastroData.email,
         senha: cadastroData.senha
       };
 
-      const usuarioCriado = await ApiService.cadastrarUsuario(dadosParaCadastro);
+      const usuarioCriado = await usuarioService.cadastrarUsuario(dadosParaCadastro);
       console.log('Usuário criado:', usuarioCriado);
       setMensagem('Usuário cadastrado com sucesso! Agora faça login para continuar.');
       setCadastroConcluido(true);
