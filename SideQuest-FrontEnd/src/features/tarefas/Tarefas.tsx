@@ -1,30 +1,11 @@
 import { useState, useEffect } from "react";
-import Sidebar from "./components/Sidebar";
+import Sidebar from "../../shared/components/Sidebar";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { FaCalendarAlt, FaRegUserCircle, FaTrash } from "react-icons/fa";
-import ModalTarefa from "./components/Modal";
-import ApiService from "./services/ApiService"; // novo uso centralizado
-
-type Status = "Pendente" | "Desenvolvimento" | "Concluído"
-
-interface Tarefa {
-    id: string;
-    nome: string;
-    status: string;
-    descricao: string;
-    comentario?: string;
-    prazoFinal?: string;
-    projetoId?: string;
-    anexo?: string[];
-    usuarioIds?: string[]; 
-}
-
-interface MembroProjeto {
-    usuarioId: string;
-    nome: string;
-    email: string;
-    criador: boolean;
-}
+import ModalTarefa from "./Modal";
+import { tarefaService } from "./TarefaService";
+import { membrosService } from "../membros/MembrosService";
+import type { Tarefa, MembroProjeto, Status } from "./type";
 
 export default function Tarefas() {
     const [tarefas, setTarefas] = useState<Tarefa[]>([]);
@@ -63,11 +44,12 @@ export default function Tarefas() {
         setLoading(true);
         setError(null);
         try {
-            const data = await ApiService.listarTarefasDoProjeto(pid);
-            setTarefas(data || []);
-        } catch (error: any) {
+            const data = await tarefaService.listarTarefasDoProjeto(pid);
+            setTarefas((data as Tarefa[]) || []);
+        } catch (error: unknown) {
             console.error("Erro ao carregar tarefas:", error);
-            setError(error?.message || 'Falha ao carregar');
+            const mensagem = error instanceof Error ? error.message : String(error);
+            setError(mensagem || 'Falha ao carregar');
         } finally {
             setLoading(false);
         }
@@ -75,15 +57,15 @@ export default function Tarefas() {
 
     async function carregarMembros(pid: string) {
         try {
-            const lista = await ApiService.listarMembrosProjeto(pid);
+            const lista = await membrosService.listarMembrosProjeto(pid);
             setMembros(lista || []);
-        } catch (e) {
+        } catch (e: unknown) {
             console.error('Erro ao carregar membros do projeto', e);
             setMembros([]);
         }
     }
 
-    function formatarData(data: string | undefined) {
+    function formatarData(data: string | null | undefined) {
         if (!data) return "";
         const date = new Date(data);
         const dia = String(date.getUTCDate()).padStart(2, '0');
@@ -123,23 +105,23 @@ export default function Tarefas() {
         };
         try {
             if (editarTarefa) {
-                await ApiService.atualizarTarefa(editarTarefa.id, tarefaPayload);
+                await tarefaService.atualizarTarefa(editarTarefa.id as string, tarefaPayload as Tarefa);
             } else {
-                await ApiService.criarTarefa(tarefaPayload);
+                await tarefaService.criarTarefa(tarefaPayload as Tarefa);
             }
             if (projetoId) await carregarTarefas(projetoId);
             setIsModalOpen(false);
             setEditarTarefa(null);
-        } catch (error) {
+        } catch (error: unknown) {
             console.error("Erro ao salvar tarefa:", error);
         }
     }
 
     async function handleDelete(tarefaId: string) {
         try {
-            await ApiService.excluirTarefa(tarefaId);
+            await tarefaService.excluirTarefa(tarefaId);
             if (projetoId) await carregarTarefas(projetoId);
-        } catch (error) {
+        } catch (error: unknown) {
             console.error("Erro ao excluir:", error);
         }
         setIsModalOpen(false);
@@ -173,8 +155,8 @@ export default function Tarefas() {
 
         if (!tarefa || tarefa.status === novoStatus) return;
 
-        try {
-            await ApiService.atualizarTarefa(draggableId, {
+            try {
+            await tarefaService.atualizarTarefa(draggableId, {
                 nome: tarefa.nome,
                 descricao: tarefa.descricao,
                 status: novoStatus,
@@ -224,7 +206,7 @@ export default function Tarefas() {
                                         </h5>
                                         {renderConteudoColuna(col.id)}
                                         {tarefas.filter((t) => t.status === col.id).map((tarefa, index) => (
-                                            <Draggable key={tarefa.id} draggableId={tarefa.id} index={index}>
+                                            <Draggable key={tarefa.id!} draggableId={tarefa.id!} index={index}>
                                                 {(provided, snapshot) => (
                                                     <div
                                                         ref={provided.innerRef}
@@ -235,7 +217,7 @@ export default function Tarefas() {
                                                         onClick={() => handleOpenEdit(tarefa)}
                                                     >
                                                         <button
-                                                            onClick={(e) => iniciarExclusao(e, tarefa.id)}
+                                                            onClick={(e) => iniciarExclusao(e, tarefa.id!)}
                                                             className="absolute top-2 right-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-full p-1"
                                                         >
                                                             {confirmandoExclusaoId === tarefa.id ? 'Confirmar' : <FaTrash size={12} />}
@@ -297,7 +279,7 @@ export default function Tarefas() {
                 onDelete={handleDelete}
                 membrosProjeto={membros.map(m => ({ id: m.usuarioId, nome: m.nome, email: m.email }))}
                 initialData={editarTarefa ? {
-                    id: editarTarefa.id,
+                    id: editarTarefa.id!,
                     name: editarTarefa.nome || "",
                     description: editarTarefa.descricao || "",
                     responsible: editarTarefa.usuarioIds || [],

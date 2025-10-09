@@ -1,17 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { FaFolderPlus, FaFolder, FaTrash, FaSyncAlt } from "react-icons/fa";
-import CriarProjetoModal from "../components/CriarProjetoModal";
-import Sidebar from "../components/Sidebar";
-import ApiService from "../services/ApiService";
-
-// Modelo alinhado ao backend
-interface Projeto {
-  id: string;
-  nome: string;
-  status: string;
-  usuarioIds: string[];
-}
+import CriarProjetoModal from "./CriarProjetoModal";
+import Sidebar from "../../shared/components/Sidebar";
+import { projetoService } from "./ProjetoService"; 
+import type { Projeto } from "./type";
 
 export default function GerenciarProjetos() {
   const navigate = useNavigate();
@@ -26,11 +19,11 @@ export default function GerenciarProjetos() {
   const usuarioLogadoId = ((): string | null => {
     const rawNovo = localStorage.getItem("usuarioLogado");
     if (rawNovo) {
-      try { return JSON.parse(rawNovo).id; } catch {}
+      try { return JSON.parse(rawNovo).id as string; } catch { /* empty */ }
     }
     const rawAntigo = localStorage.getItem("usuario");
     if (rawAntigo) {
-      try { return JSON.parse(rawAntigo).id; } catch {}
+      try { return JSON.parse(rawAntigo).id as string; } catch { /* empty */ }
     }
     const idIsolado = localStorage.getItem("usuarioId");
     return idIsolado;
@@ -38,19 +31,23 @@ export default function GerenciarProjetos() {
 
   useEffect(() => {
     carregarProjetos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usuarioLogadoId]);
 
   async function carregarProjetos() {
     if (!usuarioLogadoId) {
-      setErro("Sessão não identificada ainda. Caso tenha acabado de cadastrar, aguarde alguns segundos ou faça login novamente.");
+      setErro("Sessão não identificada ainda. Caso tenha acabado de cadastrar, faça login novamente.");
       setLoading(false);
       return;
     }
+
     setLoading(true);
     setErro(null);
+
     try {
-      const lista: Projeto[] = await (ApiService as any).listarProjetosDoUsuario(usuarioLogadoId);
+      const lista = await projetoService.listarProjetosDoUsuario(usuarioLogadoId);
       setProjetos(lista);
+
       if (lista.length > 0 && !projetoSelecionadoId) {
         const salvo = localStorage.getItem("projetoSelecionadoId");
         if (salvo && lista.some(p => p.id === salvo)) {
@@ -60,8 +57,9 @@ export default function GerenciarProjetos() {
           localStorage.setItem("projetoSelecionadoId", lista[0].id);
         }
       }
-    } catch (e: any) {
-      setErro(e.message || "Falha ao carregar projetos");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      setErro(message || "Falha ao carregar projetos");
     } finally {
       setLoading(false);
     }
@@ -71,32 +69,36 @@ export default function GerenciarProjetos() {
     if (!usuarioLogadoId) return;
     if (!nome.trim()) return;
     setCreating(true);
+
     try {
-      const novo: Projeto = await (ApiService as any).criarProjeto(usuarioLogadoId, nome.trim());
+      const novo = await projetoService.criarProjeto(usuarioLogadoId, nome.trim());
       setProjetos(prev => [...prev, novo]);
       setProjetoSelecionadoId(novo.id);
       localStorage.setItem("projetoSelecionadoId", novo.id);
       setShowModal(false);
-    } catch (e: any) {
-      alert(e.message || "Erro ao criar projeto");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      alert(message || "Erro ao criar projeto");
     } finally {
       setCreating(false);
     }
   }
 
-  async function excluirProjeto(id: string, ev?: React.MouseEvent) {
+  async function excluirProjeto(id: string, ev?: React.MouseEvent<HTMLButtonElement>) {
     if (ev) ev.stopPropagation();
     if (!window.confirm("Excluir este projeto?")) return;
     setRemovendoId(id);
+
     try {
-      await (ApiService as any).excluirProjeto(id);
+      await projetoService.excluirProjeto(id);
       setProjetos(prev => prev.filter(p => p.id !== id));
       if (projetoSelecionadoId === id) {
         setProjetoSelecionadoId(null);
         localStorage.removeItem("projetoSelecionadoId");
       }
-    } catch (e: any) {
-      alert(e.message || "Erro ao excluir");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      alert(message || "Erro ao excluir");
     } finally {
       setRemovendoId(null);
     }
@@ -105,7 +107,6 @@ export default function GerenciarProjetos() {
   function selecionar(id: string) {
     setProjetoSelecionadoId(id);
     localStorage.setItem("projetoSelecionadoId", id);
-    // Redireciona direto para tarefas do projeto
     navigate('/tarefas');
   }
 
@@ -121,8 +122,8 @@ export default function GerenciarProjetos() {
     if (erro) {
       return (
         <div className="col-span-full text-center text-red-600 flex flex-col gap-4 py-16">
-            <span>{erro}</span>
-            <button onClick={carregarProjetos} className="px-4 py-2 bg-azul-escuro text-white rounded hover:bg-azul-claro transition">Tentar novamente</button>
+          <span>{erro}</span>
+          <button onClick={carregarProjetos} className="px-4 py-2 bg-azul-escuro text-white rounded hover:bg-azul-claro transition">Tentar novamente</button>
         </div>
       );
     }
@@ -142,7 +143,7 @@ export default function GerenciarProjetos() {
           className={`group relative cursor-pointer w-full h-44 sm:h-52 rounded-lg flex flex-col items-center justify-center p-4 sm:p-6 bg-pastel shadow-md transition border-2 ${selecionado ? 'border-azul-escuro ring-2 ring-azul-escuro/40' : 'border-transparent hover:shadow-lg'}`}
         >
           <button
-            onClick={(e) => excluirProjeto(projeto.id, e)}
+            onClick={(e) => excluirProjeto(projeto.id, e as React.MouseEvent<HTMLButtonElement>)}
             disabled={removendoId === projeto.id}
             className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition text-red-600 hover:text-red-700 bg-white/70 rounded px-2 py-1 text-xs"
           >
@@ -158,7 +159,7 @@ export default function GerenciarProjetos() {
     });
   })();
 
-return (
+  return (
     <div className="flex h-screen relative">
       <Sidebar />
       <div className="flex-1 bg-white rounded-3xl overflow-auto p-8 shadow-lg mt-8 mb-8 mx-4 custom-scrollbar flex flex-col items-center">

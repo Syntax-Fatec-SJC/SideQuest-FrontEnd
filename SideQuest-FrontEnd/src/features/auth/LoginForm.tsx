@@ -2,12 +2,16 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 // import BotaoGoogle from '../BotaoGoogle';
 import './LoginForm.css';
-import type { LoginDTO } from '../../types/api';
-import ApiService from '../../services/ApiService';
+// import type { LoginDTO } from '../../types/api';
+import type { Login } from './type';
+import { usuarioService } from './UsuarioService';
+import type { LoginHandler } from './type';
 
-interface LoginFormProps {}
+interface LoginFormProps {
+  onLogin?: LoginHandler;
+}
 
-const LoginForm: React.FC<LoginFormProps> = () => {
+const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [mensagem, setMensagem] = useState('');
   const [loginData, setLoginData] = useState({ email: '', password: '' });
@@ -19,16 +23,29 @@ const LoginForm: React.FC<LoginFormProps> = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setMensagem('');
 
+    // If parent provided an onLogin, call it first. If it returns/ resolves to true,
+    // consider the submission handled by the parent and skip internal flow.
+    if (onLogin) {
+      try {
+        const handled = await Promise.resolve(onLogin(loginData));
+        if (handled === true) return;
+      } catch (err) {
+        // If parent handler throws, log and continue with internal flow
+        console.error('onLogin handler threw an error:', err);
+      }
+    }
+
+    setIsLoading(true);
+
     try {
-      const dadosParaLogin: LoginDTO = {
+      const dadosParaLogin: Login = {
         email: loginData.email,
         senha: loginData.password
       }
 
-      const resposta = await ApiService.realizarLogin(dadosParaLogin);
+      const resposta = await usuarioService.realizarLogin(dadosParaLogin);
       setMensagem(resposta.mensagem);
       console.log('Login realizado:', resposta);
 
