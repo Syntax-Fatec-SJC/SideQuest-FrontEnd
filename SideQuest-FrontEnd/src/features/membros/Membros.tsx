@@ -1,19 +1,8 @@
-import { useState, useEffect } from 'react';
-import Sidebar from './components/Sidebar';
-import ApiService from './services/ApiService';
-import type { MembroProjeto, UsuarioResumo } from './types/api';
-
-interface LinhaEdicao {
-    nome: string;
-    email: string;
-    usuarioIdSelecionado?: string; // usuário escolhido da lista existente
-    erro?: string;
-}
-
-interface Toast {
-    tipo: 'erro' | 'sucesso' | 'info';
-    mensagem: string;
-}
+import { useState, useEffect, useCallback } from 'react';
+import Sidebar from '../../shared/components/Sidebar';
+import { membrosService } from '../../services/MembrosService';
+import { usuarioService } from '../../services/AuthService';
+import type { LinhaEdicao, Toast, MembroProjeto, UsuarioResumo } from '../../types/Membro';
 
 export default function Membros() {
     const [membros, setMembros] = useState<MembroProjeto[]>([]);
@@ -27,24 +16,25 @@ export default function Membros() {
 
     const projetoSelecionadoId = typeof window !== 'undefined' ? localStorage.getItem('projetoSelecionadoId') : null;
 
-    const carregar = async () => {
+    const carregar = useCallback(async () => {
         if (!projetoSelecionadoId) { setLoadingLista(false); return; }
         setLoadingLista(true);
         try {
             const [membrosResp, usuariosResp] = await Promise.all([
-                ApiService.listarMembrosProjeto(projetoSelecionadoId),
-                ApiService.listarUsuarios()
+                membrosService.listarMembrosProjeto(projetoSelecionadoId),
+                usuarioService.listarUsuarios()
             ]);
             setMembros(membrosResp);
             setUsuarios(usuariosResp);
-        } catch (e:any) {
-            setToast({ tipo: 'erro', mensagem: e.message || 'Falha ao carregar' });
+        } catch (e: unknown) {
+            const mensagem = e instanceof Error ? e.message : String(e);
+            setToast({ tipo: 'erro', mensagem: mensagem || 'Falha ao carregar' });
         } finally {
             setLoadingLista(false);
         }
-    };
+    }, [projetoSelecionadoId]);
 
-    useEffect(() => { carregar(); }, [projetoSelecionadoId]);
+    useEffect(() => { void carregar(); }, [carregar]);
     useEffect(() => { if (toast) { const t=setTimeout(()=>setToast(null),2500); return ()=>clearTimeout(t);} }, [toast]);
 
     const membrosIds = new Set(membros.map(m=>m.usuarioId));
@@ -67,13 +57,14 @@ export default function Membros() {
                 setLoadingAcao(false);
                 return;
             }
-            await ApiService.adicionarMembroProjeto(projetoSelecionadoId, linhaEdicao.usuarioIdSelecionado);
-            const atualizados = await ApiService.listarMembrosProjeto(projetoSelecionadoId);
+            await membrosService.adicionarMembroProjeto(projetoSelecionadoId, linhaEdicao.usuarioIdSelecionado);
+            const atualizados = await membrosService.listarMembrosProjeto(projetoSelecionadoId);
             setMembros(atualizados);
             setLinhaEdicao(null);
             setToast({ tipo:'sucesso', mensagem:'Membro adicionado' });
-        } catch (e:any) {
-            setToast({ tipo:'erro', mensagem: e.message || 'Erro ao adicionar'});
+        } catch (e: unknown) {
+            const mensagem = e instanceof Error ? e.message : String(e);
+            setToast({ tipo:'erro', mensagem: mensagem || 'Erro ao adicionar'});
         } finally {
             setLoadingAcao(false);
         }
@@ -83,12 +74,13 @@ export default function Membros() {
         if (!projetoSelecionadoId) return;
         setLoadingAcao(true);
         try {
-            await ApiService.removerMembroProjeto(projetoSelecionadoId, usuarioId);
-            const atualizados = await ApiService.listarMembrosProjeto(projetoSelecionadoId);
+            await membrosService.removerMembroProjeto(projetoSelecionadoId, usuarioId);
+            const atualizados = await membrosService.listarMembrosProjeto(projetoSelecionadoId);
             setMembros(atualizados);
             setToast({ tipo:'info', mensagem:'Membro removido'});
-        } catch (e:any) {
-            setToast({ tipo:'erro', mensagem:e.message || 'Erro ao remover'});
+        } catch (e: unknown) {
+            const mensagem = e instanceof Error ? e.message : String(e);
+            setToast({ tipo:'erro', mensagem: mensagem || 'Erro ao remover'});
         } finally {
             setLoadingAcao(false);
             setConfirmandoRemocaoId(null);
@@ -121,31 +113,57 @@ export default function Membros() {
                     >+ Novo Membro</button>
                 </div>
 
-                {linhaEdicao && (
-                    <div className="bg-[#F5F5F5] rounded-lg shadow p-4 mb-4 flex flex-col gap-2">
-                        <div className="flex flex-col md:flex-row gap-2">
-                            <select
-                                className="p-2 border rounded flex-1"
-                                value={linhaEdicao.usuarioIdSelecionado || ''}
-                                onChange={e=>{
-                                    const id = e.target.value || undefined;
-                                    const user = usuarios.find(u=>u.id===id);
-                                    setLinhaEdicao(prev => prev ? ({...prev, usuarioIdSelecionado:id, nome:user?.nome||'', email:user?.email||'', erro:undefined }) : prev);
-                                }}
-                            >
-                                <option value="">Selecione um usuário...</option>
-                                {usuariosDisponiveis.map(u=> (
-                                    <option key={u.id} value={u.id}>{u.nome} - {u.email}</option>
-                                ))}
-                            </select>
-                        </div>
-                        {linhaEdicao.erro && <div className="text-sm text-red-600">{linhaEdicao.erro}</div>}
-                        <div className="flex gap-2 justify-end">
-                            <button onClick={cancelarEdicao} className="px-3 py-1 rounded bg-gray-300 hover:bg-gray-400 text-sm">Cancelar</button>
-                            <button disabled={loadingAcao} onClick={salvarLinha} className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 text-sm">Salvar</button>
-                        </div>
-                    </div>
-                )}
+    {linhaEdicao && (
+        <div className="bg-[#F5F5F5] rounded-lg shadow p-4 mb-4 flex flex-col gap-2">
+            <div className="flex flex-col md:flex-row gap-2">
+                <select
+                    className="p-2 border rounded flex-1"
+                    value={linhaEdicao.usuarioIdSelecionado || ''}
+                    onChange={e => {
+                        const id = e.target.value || undefined;
+                        const user = usuarios.find(u => u.id === id);
+                        setLinhaEdicao((prev: LinhaEdicao | null) =>
+                            prev
+                                ? {
+                                    ...prev,
+                                    usuarioIdSelecionado: id,
+                                    nome: user?.nome || '',
+                                    email: user?.email || '',
+                                    erro: undefined,
+                                }
+                                : prev
+                        );
+                    }}
+                >
+                    <option value="">Selecione um usuário...</option>
+                    {usuariosDisponiveis.map(u => (
+                        <option key={u.id} value={u.id}>
+                            {u.nome} - {u.email}
+                        </option>
+                    ))}
+                </select>
+            </div>
+
+            {linhaEdicao.erro && <div className="text-sm text-red-600">{linhaEdicao.erro}</div>}
+
+            <div className="flex gap-2 justify-end">
+                <button
+                    onClick={cancelarEdicao}
+                    className="px-3 py-1 rounded bg-gray-300 hover:bg-gray-400 text-sm"
+                >
+                    Cancelar
+                </button>
+                <button
+                    disabled={loadingAcao}
+                    onClick={salvarLinha}
+                    className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 text-sm"
+                >
+                    Salvar
+                </button>
+            </div>
+        </div>
+    )}
+
 
                 {loadingLista ? (
                     <div className="text-center text-gray-500">Carregando...</div>

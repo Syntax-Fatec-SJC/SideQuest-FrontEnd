@@ -1,9 +1,9 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Projetos from './pages/Projetos';
+import Projetos from './features/projetos/Projetos';
 // import Layout from './Layout';
-import Membros from './Membros';
-import Acesso from './pages/Acesso';
-import Tarefas from './Tarefas';
+import Membros from './features/membros/Membros';
+import Acesso from './features/auth/Acesso';
+import Tarefas from './features/tarefas/Tarefas';
 
 function App() {
   return (
