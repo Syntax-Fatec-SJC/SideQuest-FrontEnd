@@ -1,4 +1,4 @@
-import type {  UsuarioResumo as ProjetoUsuarioResumo } from '../auth/type';
+import type {  UsuarioResumo as ProjetoUsuarioResumo } from './Auth';
 
 export type UsuarioResumo = ProjetoUsuarioResumo;
 

@@ -3,9 +3,9 @@ import Sidebar from "../../shared/components/Sidebar";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { FaCalendarAlt, FaRegUserCircle, FaTrash } from "react-icons/fa";
 import ModalTarefa from "./Modal";
-import { tarefaService } from "./TarefaService";
-import { membrosService } from "../membros/MembrosService";
-import type { Tarefa, MembroProjeto, Status } from "./type";
+import { tarefaService } from "../../services/TarefaService";
+import { membrosService } from "../../services/MembrosService";
+import type { Tarefa, MembroProjeto, Status } from "../../types/Tarefa";
 
 export default function Tarefas() {
     const [tarefas, setTarefas] = useState<Tarefa[]>([]);

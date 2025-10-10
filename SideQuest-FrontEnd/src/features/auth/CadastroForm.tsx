@@ -3,9 +3,9 @@ import { useState } from "react";
 // import BotaoGoogle from "../BotaoGoogle";
 import { HiEye, HiEyeOff } from "react-icons/hi";
 // import type { UsuarioDTO } from "../../types/api";
-import type { Usuario } from "./type";
-import { usuarioService } from "./UsuarioService";
-import type { SignupHandler } from './type';
+import type { Usuario } from "../../types/Auth";
+import { usuarioService } from "../../services/AuthService";
+import type { SignupHandler } from '../../types/Auth';
 
 interface CadastroFormProps {
   onSignup?: SignupHandler;

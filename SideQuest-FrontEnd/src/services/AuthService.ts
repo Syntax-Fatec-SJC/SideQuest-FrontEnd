@@ -1,5 +1,5 @@
-import { ApiBase } from '../../shared/services/ApiBase';
-import type { Login, LoginResponse, Usuario, UsuarioCompleto, UsuarioResumo } from '../auth/type';
+import { ApiBase } from './ApiBase';
+import type { Login, LoginResponse, Usuario, UsuarioCompleto, UsuarioResumo } from '../types/Auth';
 
 class UsuarioService extends ApiBase {
   async cadastrarUsuario(dadosUsuario: Usuario): Promise<UsuarioCompleto> {

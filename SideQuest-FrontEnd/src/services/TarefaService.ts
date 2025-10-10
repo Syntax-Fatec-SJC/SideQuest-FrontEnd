@@ -1,5 +1,5 @@
-import { ApiBase } from '../../shared/services/ApiBase';
-import type { Tarefa } from '../tarefas/type';
+import { ApiBase } from './ApiBase';
+import type { Tarefa } from '../types/Tarefa';
 
 class TarefaService extends ApiBase {
   async listarTarefasDoProjeto(projetoId: string): Promise<Tarefa[]> {

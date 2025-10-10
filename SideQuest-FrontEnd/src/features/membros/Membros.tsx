@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import Sidebar from '../../shared/components/Sidebar';
-import { membrosService } from '../membros/MembrosService';
-import { usuarioService } from '../auth/UsuarioService';
-import type { LinhaEdicao, Toast, MembroProjeto, UsuarioResumo } from '../membros/type';
+import { membrosService } from '../../services/MembrosService';
+import { usuarioService } from '../../services/AuthService';
+import type { LinhaEdicao, Toast, MembroProjeto, UsuarioResumo } from '../../types/Membro';
 
 export default function Membros() {
     const [membros, setMembros] = useState<MembroProjeto[]>([]);
