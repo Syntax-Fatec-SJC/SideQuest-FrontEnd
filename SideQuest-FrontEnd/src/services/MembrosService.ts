@@ -1,5 +1,5 @@
-import { ApiBase } from '../../shared/services/ApiBase';
-import type { MembroProjeto } from '../membros/type';
+import { ApiBase } from './ApiBase';
+import type { MembroProjeto } from '../types/Membro';
 
 class MembroService extends ApiBase {
   async listarMembrosProjeto(projetoId: string): Promise<MembroProjeto[]> {

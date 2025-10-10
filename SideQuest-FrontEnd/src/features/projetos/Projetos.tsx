@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { FaFolderPlus, FaFolder, FaTrash, FaSyncAlt } from "react-icons/fa";
 import CriarProjetoModal from "./CriarProjetoModal";
 import Sidebar from "../../shared/components/Sidebar";
-import { projetoService } from "./ProjetoService"; 
-import type { Projeto } from "./type";
+import { projetoService } from "../../services/ProjetoService"; 
+import type { Projeto } from "../../types/Projeto";
 
 export default function GerenciarProjetos() {
   const navigate = useNavigate();

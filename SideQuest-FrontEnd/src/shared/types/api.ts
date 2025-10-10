@@ -17,15 +17,4 @@ export type Paginated<T> = {
 	pageSize: number;
 };
 
-/** Erro de API padronizado (útil para tratar erros no frontend) */
-export type ApiError = {
-	status: number;
-	message: string;
-	details?: unknown;
-};
-
-// Exemplos de uso:
-// - ApiResponse<Usuario> quando o endpoint retorna { success: true, data: {...} }
-// - Paginated<Projeto> quando o endpoint retorna paginação
-// - ApiError para normalizar mensagens de erro exibidas ao usuário
 

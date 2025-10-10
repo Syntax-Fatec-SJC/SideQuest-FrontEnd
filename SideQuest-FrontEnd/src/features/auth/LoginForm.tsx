@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 // import BotaoGoogle from '../BotaoGoogle';
 import './LoginForm.css';
 // import type { LoginDTO } from '../../types/api';
-import type { Login } from './type';
-import { usuarioService } from './UsuarioService';
-import type { LoginHandler } from './type';
+import type { Login } from '../../types/Auth';
+import { usuarioService } from '../../services/AuthService';
+import type { LoginHandler } from '../../types/Auth';
 
 interface LoginFormProps {
   onLogin?: LoginHandler;

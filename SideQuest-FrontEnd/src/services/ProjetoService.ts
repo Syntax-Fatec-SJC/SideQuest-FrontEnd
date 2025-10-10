@@ -1,6 +1,6 @@
 // src/services/ProjetoService.ts
-import { ApiBase } from '../../shared/services/ApiBase';
-import type { Projeto } from '../projetos/type';
+import { ApiBase } from './ApiBase';
+import type { Projeto } from '../types/Projeto';
 
 class ProjetoService extends ApiBase {
   async listarProjetosDoUsuario(usuarioId: string): Promise<Projeto[]> {

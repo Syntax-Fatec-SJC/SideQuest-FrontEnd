@@ -1,4 +1,4 @@
-import type { MembroProjeto as MembroProjetoMembro  } from "../membros/type";
+import type { MembroProjeto as MembroProjetoMembro  } from "./Membro";
 
 export type MembroProjeto = MembroProjetoMembro;
 
