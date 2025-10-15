@@ -8,7 +8,7 @@ interface ModalTarefaProps {
         description: string;
         responsible: string[];
         endDate: string;
-        status: "Pendente" | "Desenvolvimento" | "Concluído"; 
+        status: "Pendente" | "Desenvolvimento" | "Concluído";
         comment: string;
     }) => void;
     onDelete: (tarefaId: string) => void;
@@ -56,16 +56,16 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
 
     useEffect(() => {
         if (initialData) {
-        setFormData(initialData);
+            setFormData(initialData);
         } else {
-        setFormData({
-            name: "",
-            description: "",
-            responsible: [],
-            endDate: "",
-            status: "Pendente",
-            comment: "",
-        });
+            setFormData({
+                name: "",
+                description: "",
+                responsible: [],
+                endDate: "",
+                status: "Pendente",
+                comment: "",
+            });
         }
         setShowDeleteConfirm(false)
     }, [initialData, isOpen]);
@@ -90,7 +90,7 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
     const handleDelete = (): void => {
         if (showDeleteConfirm) {
             if (initialData && initialData.id) {
-                onDelete(initialData.id); 
+                onDelete(initialData.id);
             }
         } else {
             setShowDeleteConfirm(true);
@@ -98,8 +98,14 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
     };
 
     const handleSave = (): void => {
-        onSave(formData)
+        if (!formData.name.trim()) {
+            showToast("Preencha o nome da tarefa");
+            return;
+        }
+        onSave(formData);
     };
+
+
 
     const handleCommentChange = (e: ChangeEvent<HTMLTextAreaElement>): void => {
         handleInputChange('comment', e.target.value);
@@ -113,8 +119,19 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
         handleInputChange('status', e.target.value as StatusType);
     };
 
+    const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+
+    const showToast = (message: string) => {
+        setToastMsg(message);
+        setTimeout(() => setToastMsg(null), 3000); // desaparece após 3s
+    };
+
+
+
+
     // Ordena membros por nome para exibição consistente
-    const membrosOrdenados = [...membrosProjeto].sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    const membrosOrdenados = [...membrosProjeto].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 
     // Tela inicial quando modal está fechado
     if (!isOpen) return null
@@ -224,7 +241,7 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
                                         />
                                         <h2 className="text-sm text-black text-opacity-50 font-poppins">Descrição</h2>
                                     </div>
-                                    
+
                                     <textarea
                                         value={formData.description}
                                         onChange={(e) => handleInputChange('description', e.target.value)}
@@ -247,12 +264,12 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
                                         />
                                         <h2 className="text-xs text-black text-opacity-50 font-poppins">Prazo</h2>
                                     </div>
-                                    <div className="space-y-2">                                      
-                                        {/* DATE INPUT - campo de data de fim */}
+                                    <div className="space-y-2">
                                         <input
                                             type="date"
                                             value={formData.endDate}
                                             onChange={handleDateChange('endDate')}
+                                            min={new Date().toISOString().split('T')[0]} 
                                             className="w-full text-sm font-bold text-black text-opacity-50 outline-none"
                                         />
                                     </div>
@@ -273,11 +290,11 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
                                         <select
                                             value={formData.status}
                                             onChange={handleStatusChange}
-                                            className="text-sm font-bold text-black text-opacity-50 outline-none bg-transparent text-center relative z-10"
+                                            className="w-full text-sm font-bold text-black text-opacity-70 bg-transparent outline-none text-center px-3 py-2 rounded-md shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition relative z-10"
                                         >
-                                            <option value="Pendente">Pendente</option>
-                                            <option value="Desenvolvimento">Desenvolvimento</option>
-                                            <option value="Concluído">Concluído</option>
+                                            <option value="Pendente" className="bg-white text-black">Pendente</option>
+                                            <option value="Desenvolvimento" className="bg-white text-black">Desenvolvimento</option>
+                                            <option value="Concluído" className="bg-white text-black">Concluído</option>
                                         </select>
                                     </div>
                                 </section>
@@ -337,13 +354,20 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
                             {/* Botão de salvamento fica à direita */}
                             <button
                                 onClick={handleSave}
-                                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg font-semibold text-sm text-red-50 transition-colors"
+                                className={`px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg font-semibold text-sm text-red-50 transition-colors
+        ${!formData.name.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 SALVAR
                             </button>
                         </footer>
                     </div>
                 </div>
+                {toastMsg && (
+                    <div className="fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded shadow-lg text-white text-sm bg-red-600">
+                        {toastMsg}
+                    </div>
+                )}
+
             </div>
 
             {/* Modal secundário removido: agora seleção via checkboxes inline */}

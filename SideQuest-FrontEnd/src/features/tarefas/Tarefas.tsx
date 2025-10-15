@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Sidebar from "../../shared/components/Sidebar";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
-import { FaCalendarAlt, FaRegUserCircle, FaTrash } from "react-icons/fa";
+import { FaCalendarAlt, FaRegUserCircle } from "react-icons/fa";
 import ModalTarefa from "./Modal";
 import { tarefaService } from "../../services/TarefaService";
 import { membrosService } from "../../services/MembrosService";
@@ -12,10 +12,11 @@ export default function Tarefas() {
     const [projetoId, setProjetoId] = useState<string | null>(() => localStorage.getItem('projetoSelecionadoId'));
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editarTarefa, setEditarTarefa] = useState<Tarefa | null>(null);
-    const [confirmandoExclusaoId, setConfirmandoExclusaoId] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [membros, setMembros] = useState<MembroProjeto[]>([]);
+    const [toast, setToast] = useState<{ tipo: 'sucesso' | 'erro' | 'info', mensagem: string } | null>(null);
+
 
     // Carregar tarefas do backend
     // Ouve mudanças do projeto selecionado (outra página selecionou outro projeto)
@@ -85,6 +86,11 @@ export default function Tarefas() {
         setIsModalOpen(true);
     }
 
+    function mostrarToast(tipo: 'sucesso' | 'erro' | 'info', mensagem: string) {
+        setToast({ tipo, mensagem });
+        setTimeout(() => setToast(null), 2500);
+    }
+
     async function handleSave(data: {
         name: string;
         description: string;
@@ -98,7 +104,6 @@ export default function Tarefas() {
             nome: data.name,
             descricao: data.description,
             status: data.status,
-            comentario: data.comment,
             prazoFinal: data.endDate ? new Date(data.endDate).toISOString() : null,
             projetoId: projetoId,
             usuarioIds: data.responsible
@@ -106,45 +111,35 @@ export default function Tarefas() {
         try {
             if (editarTarefa) {
                 await tarefaService.atualizarTarefa(editarTarefa.id as string, tarefaPayload as Tarefa);
+                mostrarToast('sucesso', 'Tarefa editada com sucesso');
             } else {
                 await tarefaService.criarTarefa(tarefaPayload as Tarefa);
+                mostrarToast('sucesso', 'Tarefa criada com sucesso');
             }
             if (projetoId) await carregarTarefas(projetoId);
             setIsModalOpen(false);
             setEditarTarefa(null);
         } catch (error: unknown) {
             console.error("Erro ao salvar tarefa:", error);
+            mostrarToast('erro', 'Erro ao salvar tarefa');
         }
+
     }
 
     async function handleDelete(tarefaId: string) {
         try {
             await tarefaService.excluirTarefa(tarefaId);
             if (projetoId) await carregarTarefas(projetoId);
+            mostrarToast('erro', 'Tarefa excluída'); // VERMELHO
         } catch (error: unknown) {
             console.error("Erro ao excluir:", error);
+            mostrarToast('erro', 'Erro ao excluir tarefa');
         }
+
         setIsModalOpen(false);
         setEditarTarefa(null);
-        setConfirmandoExclusaoId(null);
     }
 
-    function iniciarExclusao(e: React.MouseEvent, tarefaId: string) {
-        e.stopPropagation();
-        if (confirmandoExclusaoId === tarefaId) {
-            handleDelete(tarefaId);
-        } else {
-            setConfirmandoExclusaoId(tarefaId);
-            setTimeout(() => {
-                setConfirmandoExclusaoId((curr) => (curr === tarefaId ? null : curr));
-            }, 4000);
-        }
-    }
-
-    function cancelarExclusao(e: React.MouseEvent) {
-        e.stopPropagation();
-        setConfirmandoExclusaoId(null);
-    }
 
     async function onDragEnd(result: DropResult) {
         if (!result.destination) return;
@@ -155,12 +150,11 @@ export default function Tarefas() {
 
         if (!tarefa || tarefa.status === novoStatus) return;
 
-            try {
+        try {
             await tarefaService.atualizarTarefa(draggableId, {
                 nome: tarefa.nome,
                 descricao: tarefa.descricao,
                 status: novoStatus,
-                comentario: tarefa.comentario || "",
                 prazoFinal: tarefa.prazoFinal || null,
                 projetoId: tarefa.projetoId || projetoId || "",
                 usuarioIds: tarefa.usuarioIds || []
@@ -216,23 +210,11 @@ export default function Tarefas() {
                                                             }`}
                                                         onClick={() => handleOpenEdit(tarefa)}
                                                     >
-                                                        <button
-                                                            onClick={(e) => iniciarExclusao(e, tarefa.id!)}
-                                                            className="absolute top-2 right-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-full p-1"
-                                                        >
-                                                            {confirmandoExclusaoId === tarefa.id ? 'Confirmar' : <FaTrash size={12} />}
-                                                        </button>
-                                                        {confirmandoExclusaoId === tarefa.id && (
-                                                            <button onClick={cancelarExclusao} className="absolute top-2 right-16 text-xs text-gray-500 hover:text-gray-700">Cancelar</button>
-                                                        )}
 
                                                         <div className="flex flex-col justify-between">
                                                             <div className="flex flex-col justify-center gap-2 pr-6">
                                                                 <span className="text-lg">{tarefa.nome}</span>
                                                                 <p>{tarefa.descricao}</p>
-                                                                {tarefa.comentario && (
-                                                                    <p className="text-sm text-gray-600 italic">"{tarefa.comentario}"</p>
-                                                                )}
                                                             </div>
                                                             <div className="flex justify-between mt-7">
                                                                 <p className="flex items-center gap-1 text-xs text-gray-600">
@@ -244,7 +226,7 @@ export default function Tarefas() {
                                                                             .map(id => membros.find(m => m.usuarioId === id)?.nome || id)
                                                                             .filter(Boolean);
                                                                         if (nomes.length <= 2) return nomes.join(', ');
-                                                                        return nomes.slice(0,2).join(', ') + ` (+${nomes.length-2})`;
+                                                                        return nomes.slice(0, 2).join(', ') + ` (+${nomes.length - 2})`;
                                                                     })()}
                                                                 </p>
                                                                 <p className="flex items-center gap-1">
@@ -285,9 +267,17 @@ export default function Tarefas() {
                     responsible: editarTarefa.usuarioIds || [],
                     endDate: editarTarefa.prazoFinal ? editarTarefa.prazoFinal.split('T')[0] : "",
                     status: editarTarefa.status as Status,
-                    comment: editarTarefa.comentario || "",
+                    comment: "",
                 } : undefined}
             />
+            {toast && (
+                <div className={`fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded shadow-lg text-white text-sm
+        ${toast.tipo === 'erro' ? 'bg-red-600' : 'bg-green-600'}`}>
+                    {toast.mensagem}
+                </div>
+            )}
+
+
         </div>
     )
 }
