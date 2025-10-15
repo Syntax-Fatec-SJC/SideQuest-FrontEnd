@@ -4,18 +4,23 @@ import Projetos from './features/projetos/Projetos';
 import Membros from './features/membros/Membros';
 import Acesso from './features/auth/Acesso';
 import Tarefas from './features/tarefas/Tarefas';
+import { ToastProvider } from './shared/contexts/ToastContext';
+import { ToastContainer } from './shared/components/ui/ToastContainer';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Acesso />} />
-        <Route path="/membros" element={<Membros />} />
-        <Route path="/projetos" element={<Projetos/>} />
-        <Route path="/tarefas" element={<Tarefas />} />
-        <Route path="/acesso" element={<Acesso/>} />
-      </Routes>
-    </BrowserRouter>
+    <ToastProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Acesso />} />
+          <Route path="/membros" element={<Membros />} />
+          <Route path="/projetos" element={<Projetos/>} />
+          <Route path="/tarefas" element={<Tarefas />} />
+          <Route path="/acesso" element={<Acesso/>} />
+        </Routes>
+        <ToastContainer />
+      </BrowserRouter>
+    </ToastProvider>
   );
 }
 
