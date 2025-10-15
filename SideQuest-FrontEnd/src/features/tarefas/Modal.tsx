@@ -265,11 +265,11 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
                                         <h2 className="text-xs text-black text-opacity-50 font-poppins">Prazo</h2>
                                     </div>
                                     <div className="space-y-2">
-                                        {/* DATE INPUT - campo de data de fim */}
                                         <input
                                             type="date"
                                             value={formData.endDate}
                                             onChange={handleDateChange('endDate')}
+                                            min={new Date().toISOString().split('T')[0]} 
                                             className="w-full text-sm font-bold text-black text-opacity-50 outline-none"
                                         />
                                     </div>
