@@ -24,8 +24,24 @@ export function EstadoPrincipal({
   onCarregarProjetos,
   onSelecionar,
   onExcluir,
-  onAbrirModal
+  onAbrirModal,
 }: EstadoPrincipalProps) {
+
+  const BotaoNovoProjeto = (
+    !loading && !erro && (
+      <button
+        onClick={onAbrirModal}
+        disabled={creating}
+        className="w-full h-44 sm:h-52 rounded-lg flex flex-col items-center justify-center p-4 sm:p-6 border-2 border-dashed border-cinza-claro text-cinza-claro bg-white hover:bg-pastel hover:text-cinza-medio transition disabled:opacity-50"
+      >
+        <FaFolderPlus className="text-6xl sm:text-8xl mb-2 sm:mb-3" />
+        <span className="text-base sm:text-lg">
+          {creating ? "Criando..." : "Novo Projeto"}
+        </span>
+      </button>
+    )
+  );
+
   if (loading) {
     return (
       <div className="col-span-full text-center text-cinza-claro flex flex-col items-center gap-4 py-16">
@@ -39,8 +55,8 @@ export function EstadoPrincipal({
     return (
       <div className="col-span-full text-center text-red-600 flex flex-col gap-4 py-16">
         <span>{erro}</span>
-        <button 
-          onClick={onCarregarProjetos} 
+        <button
+          onClick={onCarregarProjetos}
           className="px-4 py-2 bg-azul-escuro text-white rounded hover:bg-azul-claro transition"
         >
           Tentar novamente
@@ -51,9 +67,12 @@ export function EstadoPrincipal({
 
   if (!projetos.length) {
     return (
-      <div className="col-span-full text-center text-cinza-claro flex flex-col gap-4 py-2">
-        <span>Nenhum projeto ainda. Crie o primeiro!</span>
-      </div>
+      <>
+        <div className="col-span-full text-cinza-claro flex flex-col items-center justify-center gap-2 py-2">
+          <span>Nenhum projeto ainda. Crie o primeiro!</span>
+        </div>
+        {BotaoNovoProjeto}
+      </>
     );
   }
 
@@ -88,17 +107,7 @@ export function EstadoPrincipal({
           </div>
         );
       })}
-      
-      {!loading && !erro && (
-        <button
-          onClick={onAbrirModal}
-          disabled={creating}
-          className="w-full h-44 sm:h-52 rounded-lg flex flex-col items-center justify-center p-4 sm:p-6 border-2 border-dashed border-cinza-claro text-cinza-claro bg-white hover:bg-pastel hover:text-cinza-medio transition disabled:opacity-50"
-        >
-          <FaFolderPlus className="text-6xl sm:text-8xl mb-2 sm:mb-3" />
-          <span className="text-base sm:text-lg">{creating ? "Criando..." : "Novo Projeto"}</span>
-        </button>
-      )}
+      {BotaoNovoProjeto}
     </>
   );
 }

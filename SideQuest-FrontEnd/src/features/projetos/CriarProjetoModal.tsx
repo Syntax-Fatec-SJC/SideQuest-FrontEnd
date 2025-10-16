@@ -114,6 +114,12 @@ export default function CriarProjetoModal({ isOpen, onClose, onCreate }: Props) 
               className="bg-white w-full rounded-lg px-3 py-2 text-azul-escuro focus:outline-none focus:ring-2 focus:ring-azul-claro border-none"
               value={prazo}
               onChange={(e) => setPrazo(e.target.value)}
+              min={(() => {
+              const hoje = new Date();
+              hoje.setDate(hoje.getDate() + 1);
+              const local = new Date(hoje.getTime() - hoje.getTimezoneOffset() * 60000);
+              return local.toISOString().split("T")[0];
+            })()}
             />
           </div>
         </div>
