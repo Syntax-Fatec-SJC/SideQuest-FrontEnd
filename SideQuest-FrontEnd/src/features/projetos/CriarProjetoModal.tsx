@@ -1,37 +1,73 @@
 import { useState, useRef, useEffect } from "react";
+import { useToast } from "../../shared/hooks/useToast";
+import AdicionarUsuarios from "./components/ui/AdicionarUsuarios";
+import { useUsuariosProjeto } from "./hooks/useUsuarios";
+import { validacoesProjeto } from "./utils/validacoes";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (nome: string) => void;
+  onCreate: (data: {
+    nome: string;
+    prazo: string;
+    descricao?: string;
+    usuarios?: string[];
+  }) => void;
 }
 
 export default function CriarProjetoModal({ isOpen, onClose, onCreate }: Props) {
+  const { show } = useToast();
+  const {
+    usuariosAdicionados,
+    emailDigitado,
+    setEmailDigitado,
+    handleAddUsuario,
+    handleRemoveUsuario,
+    resetUsuarios,
+  } = useUsuariosProjeto(show);
+  
   const [nomeProjeto, setNomeProjeto] = useState("");
+  const [descricao, setDescricao] = useState("");
+  const [prazo, setPrazo] = useState("");
+
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 10);
-      const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-      window.addEventListener('keydown', onKey);
-      return () => window.removeEventListener('keydown', onKey);
+      const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+      window.addEventListener("keydown", onKey);
+      return () => window.removeEventListener("keydown", onKey);
     }
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   const handleCreate = () => {
-    if (!nomeProjeto.trim()) return;
-    onCreate(nomeProjeto.trim());
+    if (!validacoesProjeto.validarNome(nomeProjeto, show)) {
+      return;
+    }
+
+    if (!validacoesProjeto.validarPrazo(prazo, show)) {
+      return;
+    }
+
+    onCreate({
+      nome: nomeProjeto.trim(),
+      prazo,
+      ...(descricao && { descricao }),
+      ...(usuariosAdicionados.length > 0 && { usuarios: usuariosAdicionados.map((u) => u.email) }),
+    });
+
     setNomeProjeto("");
+    setDescricao("");
+    resetUsuarios();
+    setPrazo("");
   };
 
   const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === containerRef.current) {
-      onClose();
-    }
+    if (e.target === containerRef.current) onClose();
   };
 
   return (
@@ -42,37 +78,79 @@ export default function CriarProjetoModal({ isOpen, onClose, onCreate }: Props) 
       aria-modal="true"
       role="dialog"
     >
-      <div className="w-full max-w-sm p-6 bg-white rounded-xl shadow-lg animate-[fadeIn_.18s_ease-out]">
-        <h2 className="font-bold text-azul-escuro mb-4 text-center text-lg">
-          Novo Projeto
-        </h2>
+      <div className="w-full max-w-4xl p-8 bg-[#F2E9E9] rounded-xl shadow-lg animate-[fadeIn_.18s_ease-out] space-y-6">
+        {/* Nome do Projeto */}
+        <div>
+          <label className="block mb-2 font-medium text-azul-escuro">
+            Nome do Projeto <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            placeholder="Digite o nome do projeto"
+            className="text-center w-full px-3 py-4 text-azul-escuro border-none focus:outline-none focus:ring-0 text-lg"
+            value={nomeProjeto}
+            onChange={(e) => setNomeProjeto(e.target.value)}
+            ref={inputRef}
+          />
+        </div>
 
-        <input
-          ref={inputRef}
-          type="text"
-          placeholder="Nome do projeto"
-          className="w-full rounded-lg border border-cinza-borda px-3 py-2 mb-4 
-                     focus:outline-none focus:ring-2 focus:ring-azul-claro text-azul-escuro"
-          value={nomeProjeto}
-          onChange={(e) => setNomeProjeto(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); }}
+        {/* Responsável / Usuários */}
+        <AdicionarUsuarios
+          usuariosAdicionados={usuariosAdicionados}
+          emailDigitado={emailDigitado}
+          setEmailDigitado={setEmailDigitado}
+          onAddUsuario={handleAddUsuario}
+          onRemoveUsuario={handleRemoveUsuario}
         />
 
-        <div className="flex justify-end gap-2">
+        {/* Prazo */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block mb-2 font-medium text-azul-escuro">
+              Prazo <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              className="bg-white w-full rounded-lg px-3 py-2 text-azul-escuro focus:outline-none focus:ring-2 focus:ring-azul-claro border-none"
+              value={prazo}
+              onChange={(e) => setPrazo(e.target.value)}
+              min={(() => {
+              const hoje = new Date();
+              hoje.setDate(hoje.getDate() + 1);
+              const local = new Date(hoje.getTime() - hoje.getTimezoneOffset() * 60000);
+              return local.toISOString().split("T")[0];
+            })()}
+            />
+          </div>
+        </div>
+
+        {/* Descrição */}
+        <div className="bg-white rounded-lg p-4">
+          <label className="block mb-2 font-medium text-azul-escuro">
+            Descrição <span className="text-gray-400">(opcional)</span>
+          </label>
+          <textarea
+            placeholder="Descrição do projeto"
+            className="w-full resize-none h-32 px-3 py-2 rounded-lg text-azul-escuro focus:outline-none focus:ring-2 focus:ring-azul-claro border-none"
+            value={descricao}
+            onChange={(e) => setDescricao(e.target.value)}
+          />
+        </div>
+
+        {/* Botões */}
+        <div className="flex justify-between mt-4">
           <button
-            className="px-4 py-2 rounded-lg bg-gray-200 text-azul-escuro 
-                       hover:bg-gray-300 transition"
+            className="px-6 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition"
             onClick={onClose}
           >
             Cancelar
           </button>
           <button
-            className="px-4 py-2 rounded-lg text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed
-                       bg-azul-escuro hover:bg-azul-claro transition"
+            className="px-6 py-2 rounded-lg bg-azul-escuro text-white hover:bg-azul-claro transition disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleCreate}
-            disabled={!nomeProjeto.trim()}
+            disabled={!nomeProjeto.trim() || !prazo.trim()}
           >
-            Criar
+            Salvar
           </button>
         </div>
       </div>

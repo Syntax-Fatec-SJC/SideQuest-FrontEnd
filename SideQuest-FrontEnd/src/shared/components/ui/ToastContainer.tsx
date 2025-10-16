@@ -1,12 +1,9 @@
 import { useEffect } from 'react';
-import type { Toast } from '../../types/toast';
+import { useToast } from '../../hooks/useToast';
 
-type Props = {
-  toasts: Toast[];
-  remove: (index: number) => void;
-};
+export const ToastContainer = () => {
+  const { toasts, remove } = useToast();
 
-export const ToastContainer = ({ toasts, remove }: Props) => {
   useEffect(() => {
     const timers = toasts.map((_, index) =>
       setTimeout(() => remove(index), 3000)
