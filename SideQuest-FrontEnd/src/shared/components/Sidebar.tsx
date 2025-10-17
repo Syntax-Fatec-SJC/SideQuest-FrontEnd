@@ -76,7 +76,7 @@ export default function Sidebar() {
         )}
         {/* Outros links permanecem sempre visíveis, mas podem ser condicionados futuramente */}
         <SidebarLink icon={MdOutlineCalendarToday} label="Calendário (Dev.)" to="/projetos" /> {/* Mudar Futuramente*/}
-        <SidebarLink icon={MdOutlineAssessment} label="Relatórios (Dev.)" to="/projetos" /> {/* Mudar Futuramente*/}
+        <SidebarLink icon={MdOutlineAssessment} label="Relatórios" to="/relatorio" /> {/* Mudar Futuramente*/}
         <SidebarLink icon={MdNotificationsNone} label="Avisos (Dev.)" to="/projetos" /> {/* Mudar Futuramente*/}
       </div>
 
