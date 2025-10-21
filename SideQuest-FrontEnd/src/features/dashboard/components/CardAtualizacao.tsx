@@ -10,10 +10,10 @@ interface CardAtualizacaoProps {
 export function CardAtualizacao({
   atualizacoes,
   className = "",
-  maxVisible = 4
+  // maxVisible = 4
 }: CardAtualizacaoProps) {
-  const scrollAtivo = atualizacoes.length > maxVisible;
-  const alturaMax = scrollAtivo ? `${maxVisible * 120}px` : "auto";
+  // const scrollAtivo = atualizacoes.length > maxVisible; // Comentado temporariamente
+  // const alturaMax = scrollAtivo ? `${maxVisible * 120}px` : "auto"; // Comentado temporariamente
 
   return (
     <div className={`bg-white mb-4 rounded-3xl p-6 flex flex-col gap-4 w-full shadow-sm ${className}`}>
@@ -22,8 +22,9 @@ export function CardAtualizacao({
       </h2>
 
       <div
-        className={`flex flex-col gap-4 pr-2 ${scrollAtivo ? "overflow-y-auto" : ""}`}
-        style={{ maxHeight: alturaMax }}
+        className={`flex flex-col gap-4 pr-2`}
+        // style={{ maxHeight: alturaMax }} // Comentado temporariamente
+        // ${scrollAtivo ? "overflow-y-auto" : ""} // Comentado temporariamente
       >
         {atualizacoes.map((item, index) => (
           <AtualizacaoItemCard key={index} item={item} />

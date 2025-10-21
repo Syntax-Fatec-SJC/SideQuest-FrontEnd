@@ -65,7 +65,7 @@ export function GraficoPizzaTarefas({ dados, height = 260 }: GraficoPizzaTarefas
               cx="50%"
               cy="50%"
               innerRadius={0} 
-              outerRadius={95}
+              outerRadius={130}
               label={renderInsideLabel}
               labelLine={false}
               paddingAngle={0}
@@ -82,14 +82,14 @@ export function GraficoPizzaTarefas({ dados, height = 260 }: GraficoPizzaTarefas
         </ResponsiveContainer>
       </div>
 
-      <div className="w-full md:w-1/2 flex flex-col gap-3">
+      <div className="w-full md:w-1/2 flex flex-col gap-12">
         {dados.map((item) => (
           <div key={item.chave} className="flex items-center gap-3">
             <span
               className="w-4 h-4 rounded-full"
               style={{ backgroundColor: cores[item.chave] }}
             />
-            <div className="text-sm font-medium text-gray-700">{item.chave}</div>
+          <div className="text-lg font-medium text-gray-700">{item.chave}</div>
           </div>
         ))}
       </div>
