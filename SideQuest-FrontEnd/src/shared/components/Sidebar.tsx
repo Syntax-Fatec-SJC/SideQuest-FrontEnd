@@ -67,7 +67,7 @@ export default function Sidebar() {
       </div>
 
       <div className="flex flex-col gap-2 px-4">
-        <SidebarLink icon={MdOutlineDashboard} label="Dashboard (Dev.)" to="/projetos" /> {/* Mudar Futuramente*/}
+        <SidebarLink icon={MdOutlineDashboard} label="Dashboard" to="/dashboard" /> {/* Mudar Futuramente*/}
         {projetoSelecionadoId && (
           <>
             <SidebarLink icon={MdChecklist} label="Tarefas" to="/tarefas" />
