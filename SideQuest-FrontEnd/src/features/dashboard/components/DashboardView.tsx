@@ -10,6 +10,7 @@ interface DashboardViewProps {
   entregas: EntregaItem[];
   atualizacoes: AtualizacaoItem[];
   erro?: string | null;
+  loadingEntregas?: boolean;
 }
 
 export function DashboardView({
@@ -18,6 +19,7 @@ export function DashboardView({
   entregas,
   atualizacoes,
   erro = null,
+  loadingEntregas = false,
 }: DashboardViewProps) {
   return (
     <div className="flex relative">
@@ -38,7 +40,13 @@ export function DashboardView({
             <GraficoPizzaTarefas dados={dadosPizza} />
           )}
 
-          <CardEntrega entregas={entregas} />
+          {loadingEntregas ? (
+            <div className="bg-white h-full mb-4 rounded-3xl p-6 flex justify-center items-center shadow-sm">
+              <p className="text-center text-gray-500">Carregando próximas entregas...</p>
+            </div>
+          ) : (
+            <CardEntrega entregas={entregas} />
+          )}
         </div>
         <div className="w-[400px] flex flex-col">
           <CardAtualizacao atualizacoes={atualizacoes} className="flex-1" />

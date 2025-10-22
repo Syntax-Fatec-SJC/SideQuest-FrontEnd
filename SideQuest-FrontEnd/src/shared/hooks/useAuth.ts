@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { usuarioService } from '../../services/AuthService';
 
 export interface UsuarioSessao {
   id: string;
@@ -32,12 +33,22 @@ export function useAuth() {
     setUsuario(lerUsuarioLocalStorage());
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    try {
+      // Chamar endpoint de logout para limpar o cookie httpOnly
+      await usuarioService.realizarLogout();
+    } catch (error) {
+      console.error('Erro ao fazer logout no servidor:', error);
+      // Continua limpando o localStorage mesmo se houver erro
+    }
+    
+    // Limpar localStorage
     localStorage.removeItem('usuarioLogado');
     localStorage.removeItem('usuario');
     localStorage.removeItem('usuarioSessao');
     localStorage.removeItem('usuarioId');
     localStorage.removeItem('projetoSelecionadoId');
+    localStorage.removeItem('token'); // Limpar token JWT (fallback)
     setUsuario(null);
   }, []);
 
