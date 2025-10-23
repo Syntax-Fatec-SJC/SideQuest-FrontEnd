@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
-import { FaCalendarAlt, FaRegUserCircle, FaTrash, FaPaperclip } from "react-icons/fa";
+import { FaCalendarAlt, FaRegUserCircle, FaTrash } from "react-icons/fa";
 import ModalTarefa from "./components/Modal";
 import ApiService from "./services/ApiService";
 import axios from "axios";
@@ -18,13 +18,6 @@ interface Tarefa {
     projetoId?: string;
     anexo?: string[];
     usuarioIds?: string[];
-    anexos?: AnexoInfo[];
-}
-
-interface AnexoInfo {
-    id: string;
-    nomeOriginal: string;
-    contentType: string;
 }
 
 interface MembroProjeto {
@@ -33,6 +26,8 @@ interface MembroProjeto {
     email: string;
     criador: boolean;
 }
+
+const API_BASE_URL = 'http://localhost:8080';
 
 export default function Tarefas() {
     const [tarefas, setTarefas] = useState<Tarefa[]>([]);
@@ -70,25 +65,10 @@ export default function Tarefas() {
         setError(null);
         try {
             const data = await ApiService.listarTarefasDoProjeto(pid);
-            console.log('📋 Tarefas carregadas:', data);
-
-            const tarefasComAnexos = await Promise.all(
-                (data || []).map(async (tarefa: Tarefa) => {
-                    try {
-                        const anexosResponse = await axios.get(`http://localhost:8080/api/anexos/tarefa/${tarefa.id}`);
-                        console.log(`📎 Anexos da tarefa ${tarefa.nome}:`, anexosResponse.data);
-                        return { ...tarefa, anexos: anexosResponse.data };
-                    } catch (error) {
-                        console.log(`⚠️ Erro ao carregar anexos da tarefa ${tarefa.nome}:`, error);
-                        return { ...tarefa, anexos: [] };
-                    }
-                })
-            );
-
-            console.log('✅ Tarefas com anexos:', tarefasComAnexos);
-            setTarefas(tarefasComAnexos);
+            setTarefas(data || []);
+            console.log(`✅ [TAREFAS] Carregadas ${data?.length || 0} tarefas`);
         } catch (error: any) {
-            console.error("Erro ao carregar tarefas:", error);
+            console.error("❌ [TAREFAS] Erro ao carregar:", error);
             setError(error?.message || 'Falha ao carregar');
         } finally {
             setLoading(false);
@@ -99,8 +79,9 @@ export default function Tarefas() {
         try {
             const lista = await ApiService.listarMembrosProjeto(pid);
             setMembros(lista || []);
+            console.log(`✅ [MEMBROS] Carregados ${lista?.length || 0} membros`);
         } catch (e) {
-            console.error('Erro ao carregar membros do projeto', e);
+            console.error('❌ [MEMBROS] Erro ao carregar', e);
             setMembros([]);
         }
     }
@@ -118,67 +99,239 @@ export default function Tarefas() {
     function handleOpenCreate() {
         setEditarTarefa(null);
         setIsModalOpen(true);
+        console.log('📝 [MODAL] Abrindo para CRIAR nova tarefa');
     }
 
     function handleOpenEdit(tarefa: Tarefa) {
         setEditarTarefa(tarefa);
         setIsModalOpen(true);
+        console.log('✏️ [MODAL] Abrindo para EDITAR:', tarefa.nome);
     }
 
-    async function handleSave(tarefaCriada: any) {
-        if (projetoId) {
-            await carregarTarefas(projetoId);
+    // 💾 SALVAR TAREFA - FUNÇÃO COMPLETA E DEFINITIVA
+    async function handleSave(data: {
+        name: string;
+        description: string;
+        responsible: string[];
+        endDate: string;
+        status: Status;
+        comment: string;
+        files: File[];
+    }) {
+        if (!projetoId) {
+            alert('❌ Erro: Nenhum projeto selecionado');
+            return;
         }
-        setIsModalOpen(false);
-        setEditarTarefa(null);
+
+        console.log('💾 [SAVE] Iniciando salvamento...');
+        console.log('   Nome:', data.name);
+        console.log('   Arquivos:', data.files.length);
+        console.log('   É edição?', !!editarTarefa);
+
+        const tarefaPayload = {
+            nome: data.name,
+            descricao: data.description,
+            status: data.status,
+            comentario: data.comment,
+            prazoFinal: data.endDate ? new Date(data.endDate).toISOString() : null,
+            projetoId: projetoId,
+            usuarioIds: data.responsible
+        };
+
+        try {
+            let tarefaId: string;
+
+            if (editarTarefa) {
+                // ✏️ EDITAR tarefa existente
+                console.log('✏️ [SAVE] Atualizando tarefa ID:', editarTarefa.id);
+                await ApiService.atualizarTarefa(editarTarefa.id, tarefaPayload);
+                tarefaId = editarTarefa.id;
+                console.log('✅ [SAVE] Tarefa atualizada no banco!');
+            } else {
+                // ➕ CRIAR nova tarefa
+                console.log('➕ [SAVE] Criando nova tarefa...');
+                const novaTarefa = await ApiService.criarTarefa(tarefaPayload);
+                tarefaId = novaTarefa.id;
+                console.log('✅ [SAVE] Tarefa criada com ID:', tarefaId);
+            }
+
+            // 📤 UPLOAD DE ANEXOS (CRÍTICO!)
+            if (data.files && data.files.length > 0) {
+                console.log(`📤 [UPLOAD] Enviando ${data.files.length} arquivo(s) para tarefa ${tarefaId}...`);
+                await uploadAnexos(tarefaId, data.files);
+                console.log('✅ [UPLOAD] Todos os anexos foram enviados!');
+            } else {
+                console.log('ℹ️ [UPLOAD] Sem arquivos para enviar');
+            }
+
+            // 🔄 RECARREGAR lista de tarefas
+            console.log('🔄 [SAVE] Recarregando lista de tarefas...');
+            await carregarTarefas(projetoId);
+
+            // ✅ FECHAR MODAL
+            console.log('✅ [SAVE] Fechando modal...');
+            setIsModalOpen(false);
+            setEditarTarefa(null);
+
+            console.log('🎉 [SAVE] OPERAÇÃO CONCLUÍDA COM SUCESSO!');
+            console.log('═══════════════════════════════════════');
+
+        } catch (error) {
+            console.error("❌ [SAVE] ERRO ao salvar:", error);
+            alert("Erro ao salvar tarefa. Verifique o console.");
+        }
     }
 
+    // 📤 UPLOAD DE ANEXOS PARA O BACKEND
+    async function uploadAnexos(tarefaId: string, files: File[]) {
+        if (files.length === 0) return;
+
+        const formData = new FormData();
+
+        console.log('📦 [UPLOAD] Preparando FormData:');
+        files.forEach((file, index) => {
+            formData.append('files', file);
+            console.log(`   ${index + 1}. ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
+        });
+
+        try {
+            console.log(`📡 [UPLOAD] Enviando para: ${API_BASE_URL}/api/anexos/tarefa/${tarefaId}`);
+
+            const response = await axios.post(
+                `${API_BASE_URL}/api/anexos/tarefa/${tarefaId}`,
+                formData,
+                {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                    onUploadProgress: (progressEvent) => {
+                        const percentCompleted = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
+                        console.log(`📊 [UPLOAD] Progresso: ${percentCompleted}%`);
+                    }
+                }
+            );
+
+            console.log('✅ [UPLOAD] Resposta do servidor:', response.status, response.data);
+        } catch (error: any) {
+            console.error('❌ [UPLOAD] Erro ao enviar arquivos:', error);
+            console.error('   Detalhes:', error.response?.data || error.message);
+            throw error;
+        }
+    }
+
+    // 🗑️ DELETAR TAREFA - FUNÇÃO COMPLETA E DEFINITIVA
     async function handleDelete(tarefaId: string) {
-        if (projetoId) {
-            await carregarTarefas(projetoId);
+        console.log('🗑️ [DELETE] Iniciando exclusão da tarefa:', tarefaId);
+
+        try {
+            // 1️⃣ Deletar ANEXOS primeiro
+            console.log('📎 [DELETE] Deletando anexos da tarefa...');
+            try {
+                await axios.delete(`${API_BASE_URL}/api/anexos/tarefa/${tarefaId}`);
+                console.log('✅ [DELETE] Anexos deletados!');
+            } catch (error: any) {
+                console.warn('⚠️ [DELETE] Erro ao deletar anexos (talvez não existam):', error.message);
+            }
+
+            // 2️⃣ Deletar TAREFA
+            console.log('🗑️ [DELETE] Deletando tarefa do banco...');
+            await ApiService.excluirTarefa(tarefaId);
+            console.log('✅ [DELETE] Tarefa deletada do MongoDB!');
+
+            // 3️⃣ RECARREGAR lista
+            console.log('🔄 [DELETE] Recarregando lista...');
+            if (projetoId) await carregarTarefas(projetoId);
+
+            // 4️⃣ FECHAR modal
+            console.log('✅ [DELETE] Fechando modal...');
+            setIsModalOpen(false);
+            setEditarTarefa(null);
+            setConfirmandoExclusaoId(null);
+
+            console.log('🎉 [DELETE] TAREFA DELETADA COM SUCESSO!');
+            console.log('═══════════════════════════════════════');
+
+        } catch (error) {
+            console.error("❌ [DELETE] ERRO ao excluir:", error);
+            alert("Erro ao excluir tarefa. Verifique o console.");
         }
-        setIsModalOpen(false);
-        setEditarTarefa(null);
-        setConfirmandoExclusaoId(null);
     }
 
-    function iniciarExclusao(e: React.MouseEvent, tarefaId: string) {
+    // 🗑️ DELETAR TAREFA NO CARD (com confirmação)
+    function deletarTarefaNoCard(e: React.MouseEvent, tarefaId: string) {
         e.stopPropagation();
+        e.preventDefault();
+
         if (confirmandoExclusaoId === tarefaId) {
-            handleDeleteCard(tarefaId);
+            // 2ª vez - CONFIRMA e DELETA
+            console.log('✅ [CARD] Confirmado! Deletando tarefa:', tarefaId);
+            handleDelete(tarefaId);
         } else {
+            // 1ª vez - PEDE CONFIRMAÇÃO
+            console.log('⚠️ [CARD] Pedindo confirmação para:', tarefaId);
             setConfirmandoExclusaoId(tarefaId);
+
+            // Cancela após 4 segundos
             setTimeout(() => {
-                setConfirmandoExclusaoId((curr) => (curr === tarefaId ? null : curr));
+                setConfirmandoExclusaoId((curr) => {
+                    if (curr === tarefaId) {
+                        console.log('⏱️ [CARD] Timeout - confirmação cancelada');
+                        return null;
+                    }
+                    return curr;
+                });
             }, 4000);
         }
     }
 
-    async function handleDeleteCard(tarefaId: string) {
-        try {
-            await ApiService.excluirTarefa(tarefaId);
-            if (projetoId) await carregarTarefas(projetoId);
-        } catch (error) {
-            console.error("Erro ao excluir:", error);
-        }
-        setConfirmandoExclusaoId(null);
-    }
-
+    // ❌ CANCELAR EXCLUSÃO
     function cancelarExclusao(e: React.MouseEvent) {
         e.stopPropagation();
+        e.preventDefault();
+        console.log('❌ [CARD] Exclusão cancelada pelo usuário');
         setConfirmandoExclusaoId(null);
     }
 
+    // 🎯 DRAG AND DROP - ATUALIZA STATUS NA API
     async function onDragEnd(result: DropResult) {
-        if (!result.destination) return;
+        if (!result.destination) {
+            console.log('❌ [DRAG] Cancelado - soltou fora');
+            return;
+        }
 
-        const { draggableId, destination } = result;
+        const { draggableId, destination, source } = result;
         const novoStatus = destination.droppableId as Status;
+        const statusAntigo = source.droppableId;
+
+        if (statusAntigo === novoStatus) {
+            console.log('ℹ️ [DRAG] Mesma coluna - sem ação');
+            return;
+        }
+
         const tarefa = tarefas.find(t => t.id === draggableId);
 
-        if (!tarefa || tarefa.status === novoStatus) return;
+        if (!tarefa) {
+            console.error('❌ [DRAG] Tarefa não encontrada:', draggableId);
+            return;
+        }
 
+        console.log('🎯 [DRAG] Movendo tarefa:', tarefa.nome);
+        console.log(`   De: "${statusAntigo}" → Para: "${novoStatus}"`);
+
+        // Atualiza visual IMEDIATAMENTE
+        setTarefas(prev => prev.map(t =>
+            t.id === draggableId ? { ...t, status: novoStatus } : t
+        ));
+        console.log('✅ [DRAG] Visual atualizado!');
+
+        // Atualiza no BACKEND (MongoDB)
         try {
+            console.log('📡 [DRAG] Enviando para API...');
+            console.log('   Payload:', {
+                id: draggableId,
+                nome: tarefa.nome,
+                status: novoStatus,
+                projetoId: tarefa.projetoId || projetoId
+            });
+
             await ApiService.atualizarTarefa(draggableId, {
                 nome: tarefa.nome,
                 descricao: tarefa.descricao,
@@ -188,25 +341,24 @@ export default function Tarefas() {
                 projetoId: tarefa.projetoId || projetoId || "",
                 usuarioIds: tarefa.usuarioIds || []
             });
-            setTarefas(prev => prev.map(t => t.id === draggableId ? { ...t, status: novoStatus } : t));
-        } catch (error) {
-            console.error("Erro ao mover tarefa:", error);
+
+            console.log('✅ [DRAG] Status atualizado no MONGODB!');
+            console.log('🎉 [DRAG] Drag and Drop CONCLUÍDO COM SUCESSO!');
+            console.log('═══════════════════════════════════════');
+
+        } catch (error: any) {
+            console.error("❌ [DRAG] ERRO ao atualizar no backend:", error);
+            console.error("   Detalhes:", error.message);
+
+            // Reverte mudança visual
+            setTarefas(prev => prev.map(t =>
+                t.id === draggableId ? { ...t, status: tarefa.status } : t
+            ));
+            console.log('↩️ [DRAG] Visual revertido');
+
+            alert("Erro ao mover tarefa. A alteração foi revertida. Verifique o console.");
         }
     }
-
-    const getFileTypeLabel = (contentType: string): string => {
-        if (contentType.startsWith('image/')) return 'IMG';
-        if (contentType === 'application/pdf') return 'PDF';
-        if (contentType.startsWith('video/')) return 'VÍD';
-        return 'ARQ';
-    };
-
-    const getFileTypeColor = (contentType: string): string => {
-        if (contentType.startsWith('image/')) return 'bg-blue-100 text-blue-700';
-        if (contentType === 'application/pdf') return 'bg-red-100 text-red-700';
-        if (contentType.startsWith('video/')) return 'bg-purple-100 text-purple-700';
-        return 'bg-gray-100 text-gray-700';
-    };
 
     const columns = [
         { id: "Pendente", nome: "Pendentes", color: "text-yellow-700" },
@@ -235,8 +387,8 @@ export default function Tarefas() {
                                     <div
                                         ref={provided.innerRef}
                                         {...provided.droppableProps}
-                                        className={`flex flex-col flex-1 bg-[#F2EEE9] rounded-xl shadow-2xl transition-colors overflow-y-auto max-h-[calc(94vh-10rem)] min-h-[calc(94vh-10rem)]
-                                            ${snapshot.isDraggingOver ? "bg-blue-100" : ""}`}
+                                        className={`flex flex-col flex-1 bg-[#F2EEE9] rounded-xl shadow-2xl transition-all duration-300 overflow-y-auto max-h-[calc(94vh-10rem)] min-h-[calc(94vh-10rem)]
+                                            ${snapshot.isDraggingOver ? "bg-blue-100 border-4 border-blue-400 border-dashed" : ""}`}
                                     >
                                         <h5 className={`flex justify-center mb-4 text-2xl font-mono sticky top-0 z-10 bg-[#F2EEE9] py-2 ${col.color}`}>
                                             {col.nome}
@@ -249,113 +401,53 @@ export default function Tarefas() {
                                                         ref={provided.innerRef}
                                                         {...provided.draggableProps}
                                                         {...provided.dragHandleProps}
-                                                        className={`p-3 m-2 bg-white rounded-xl shadow cursor-pointer transition relative ${snapshot.isDragging ? "bg-blue-200" : "hover:bg-gray-50"
+                                                        className={`p-3 m-2 bg-white rounded-xl shadow cursor-grab active:cursor-grabbing transition relative ${snapshot.isDragging ? "bg-blue-200 shadow-2xl scale-105 rotate-2" : "hover:bg-gray-50"
                                                             }`}
-                                                        onClick={() => handleOpenEdit(tarefa)}
+                                                        onClick={(e) => {
+                                                            if (!snapshot.isDragging) {
+                                                                handleOpenEdit(tarefa);
+                                                            }
+                                                        }}
                                                     >
-                                                        {confirmandoExclusaoId === tarefa.id ? (
-                                                            <div className="absolute top-2 right-2 flex flex-col gap-1 z-10">
+                                                        {/* BOTÕES DE EXCLUSÃO - VERTICAL E FUNCIONAIS */}
+                                                        <div className="absolute top-2 right-2 flex flex-col gap-1 z-20">
+                                                            {confirmandoExclusaoId === tarefa.id ? (
+                                                                <>
+                                                                    <button
+                                                                        onClick={(e) => deletarTarefaNoCard(e, tarefa.id)}
+                                                                        className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded shadow-lg transition-all duration-200 transform hover:scale-105"
+                                                                        title="Confirmar exclusão"
+                                                                    >
+                                                                        Confirmar
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={cancelarExclusao}
+                                                                        className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-xs font-bold rounded shadow-lg transition-all duration-200 transform hover:scale-105"
+                                                                        title="Cancelar exclusão"
+                                                                    >
+                                                                        Cancelar
+                                                                    </button>
+                                                                </>
+                                                            ) : (
                                                                 <button
-                                                                    onClick={(e) => iniciarExclusao(e, tarefa.id)}
-                                                                    className="px-2 py-1 text-xs font-semibold bg-red-600 text-white rounded hover:bg-red-700 whitespace-nowrap"
+                                                                    onClick={(e) => deletarTarefaNoCard(e, tarefa.id)}
+                                                                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-full transition-all duration-200 transform hover:scale-110"
+                                                                    title="Excluir tarefa"
                                                                 >
-                                                                    Confirmar
+                                                                    <FaTrash size={14} />
                                                                 </button>
-                                                                <button
-                                                                    onClick={cancelarExclusao}
-                                                                    className="px-2 py-1 text-xs font-semibold bg-gray-300 text-gray-700 rounded hover:bg-gray-400 whitespace-nowrap"
-                                                                >
-                                                                    Cancelar
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <button
-                                                                onClick={(e) => iniciarExclusao(e, tarefa.id)}
-                                                                className="absolute top-2 right-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-full p-1"
-                                                            >
-                                                                <FaTrash size={12} />
-                                                            </button>
-                                                        )}
+                                                            )}
+                                                        </div>
 
                                                         <div className="flex flex-col justify-between">
-                                                            <div className="flex flex-col justify-center gap-2 pr-6">
-                                                                <span className="text-lg font-semibold">{tarefa.nome}</span>
+                                                            <div className="flex flex-col justify-center gap-2 pr-16">
+                                                                <span className="text-lg font-semibold text-gray-800">{tarefa.nome}</span>
                                                                 <p className="text-sm text-gray-600">{tarefa.descricao}</p>
                                                                 {tarefa.comentario && (
                                                                     <p className="text-sm text-gray-600 italic">"{tarefa.comentario}"</p>
                                                                 )}
-
-                                                                {tarefa.anexos && tarefa.anexos.length > 0 && (
-                                                                    <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-300 shadow-sm">
-                                                                        <div className="flex items-center gap-2 mb-3">
-                                                                            <FaPaperclip className="text-blue-600" size={16} />
-                                                                            <span className="text-sm font-bold text-blue-800">
-                                                                                {tarefa.anexos.length} Anexo{tarefa.anexos.length > 1 ? 's' : ''}
-                                                                            </span>
-                                                                        </div>
-
-                                                                        {/* Primeiro arquivo em DESTAQUE */}
-                                                                        <div className="mb-2 bg-white p-3 rounded-lg border-2 border-blue-200 shadow-md">
-                                                                            {/* TIPO DO ARQUIVO - GRANDE E VISÍVEL */}
-                                                                            <div className="flex items-center gap-2 mb-2">
-                                                                                {tarefa.anexos[0].contentType.startsWith('image/') && (
-                                                                                    <>
-                                                                                        <div className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm font-bold shadow-sm">
-                                                                                            🖼️ IMAGEM
-                                                                                        </div>
-                                                                                        <span className="text-xs text-gray-500 font-medium">
-                                                                                            {tarefa.anexos[0].contentType.split('/')[1].toUpperCase()}
-                                                                                        </span>
-                                                                                    </>
-                                                                                )}
-                                                                                {tarefa.anexos[0].contentType === 'application/pdf' && (
-                                                                                    <div className="px-3 py-1 bg-red-600 text-white rounded-md text-sm font-bold shadow-sm">
-                                                                                        📄 PDF
-                                                                                    </div>
-                                                                                )}
-                                                                                {tarefa.anexos[0].contentType.startsWith('video/') && (
-                                                                                    <>
-                                                                                        <div className="px-3 py-1 bg-purple-600 text-white rounded-md text-sm font-bold shadow-sm">
-                                                                                            🎬 VÍDEO
-                                                                                        </div>
-                                                                                        <span className="text-xs text-gray-500 font-medium">
-                                                                                            {tarefa.anexos[0].contentType.split('/')[1].toUpperCase()}
-                                                                                        </span>
-                                                                                    </>
-                                                                                )}
-                                                                            </div>
-
-                                                                            {/* NOME DO ARQUIVO - GRANDE E VISÍVEL */}
-                                                                            <p className="text-sm font-bold text-gray-900 break-words leading-tight" title={tarefa.anexos[0]?.nomeOriginal}>
-                                                                                📎 {tarefa.anexos[0]?.nomeOriginal}
-                                                                            </p>
-                                                                        </div>
-
-                                                                        {/* Outros arquivos */}
-                                                                        {tarefa.anexos.length > 1 && (
-                                                                            <div className="flex flex-wrap gap-2">
-                                                                                {tarefa.anexos.slice(1, 4).map((anexo: AnexoInfo) => (
-                                                                                    <div
-                                                                                        key={anexo.id}
-                                                                                        className="text-xs px-2 py-1 bg-white border-2 border-gray-300 rounded font-semibold text-gray-700 truncate max-w-[100px] shadow-sm"
-                                                                                        title={anexo.nomeOriginal}
-                                                                                    >
-                                                                                        {anexo.nomeOriginal.length > 12
-                                                                                            ? anexo.nomeOriginal.substring(0, 12) + '...'
-                                                                                            : anexo.nomeOriginal}
-                                                                                    </div>
-                                                                                ))}
-                                                                                {tarefa.anexos.length > 4 && (
-                                                                                    <div className="text-xs px-3 py-1 bg-gray-300 rounded-md font-bold text-gray-800 shadow-sm">
-                                                                                        +{tarefa.anexos.length - 4} mais
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                )}
                                                             </div>
-                                                            <div className="flex justify-between mt-4">
+                                                            <div className="flex justify-between mt-7">
                                                                 <p className="flex items-center gap-1 text-xs text-gray-600">
                                                                     <FaRegUserCircle />
                                                                     {(() => {
@@ -368,7 +460,7 @@ export default function Tarefas() {
                                                                         return nomes.slice(0, 2).join(', ') + ` (+${nomes.length - 2})`;
                                                                     })()}
                                                                 </p>
-                                                                <p className="flex items-center gap-1 text-xs text-gray-600">
+                                                                <p className="flex items-center gap-1 text-xs text-gray-500">
                                                                     {formatarData(tarefa.prazoFinal)}
                                                                     <FaCalendarAlt />
                                                                 </p>
@@ -385,7 +477,7 @@ export default function Tarefas() {
                         ))}
                     </div>
                     <div
-                        className="flex items-center justify-center bg-[#377CD4] w-full h-16 rounded-lg cursor-pointer mt-4 hover:bg-[#2a5fa0] transition-colors"
+                        className="flex items-center justify-center bg-[#377CD4] w-full h-16 rounded-lg cursor-pointer mt-4 hover:bg-[#2a5fa0] transition-colors shadow-lg"
                         onClick={handleOpenCreate}
                     >
                         <h5 className="text-3xl text-white font-mono">Criar Tarefa</h5>
@@ -393,12 +485,16 @@ export default function Tarefas() {
                 </div>
             </DragDropContext>
 
+            {/* MODAL - AGORA VAI FUNCIONAR PERFEITAMENTE! */}
             <ModalTarefa
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                onClose={() => {
+                    console.log('❌ [MODAL] Fechado pelo usuário (X)');
+                    setIsModalOpen(false);
+                    setEditarTarefa(null);
+                }}
                 onSave={handleSave}
                 onDelete={handleDelete}
-                projetoId={projetoId || ""}
                 membrosProjeto={membros.map(m => ({ id: m.usuarioId, nome: m.nome, email: m.email }))}
                 initialData={editarTarefa ? {
                     id: editarTarefa.id,
