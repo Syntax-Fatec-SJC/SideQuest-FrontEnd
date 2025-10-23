@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
-import { FaCalendarAlt, FaRegUserCircle, FaTrash } from "react-icons/fa";
+import { FaCalendarAlt, FaRegUserCircle, FaTrash, FaPaperclip } from "react-icons/fa";
 import ModalTarefa from "./components/Modal";
-import ApiService from "./services/ApiService"; // novo uso centralizado
+import ApiService from "./services/ApiService";
+import axios from "axios";
 
 type Status = "Pendente" | "Desenvolvimento" | "Concluído"
 
@@ -16,7 +17,14 @@ interface Tarefa {
     prazoFinal?: string;
     projetoId?: string;
     anexo?: string[];
-    usuarioIds?: string[]; 
+    usuarioIds?: string[];
+    anexos?: AnexoInfo[];
+}
+
+interface AnexoInfo {
+    id: string;
+    nomeOriginal: string;
+    contentType: string;
 }
 
 interface MembroProjeto {
@@ -36,8 +44,6 @@ export default function Tarefas() {
     const [error, setError] = useState<string | null>(null);
     const [membros, setMembros] = useState<MembroProjeto[]>([]);
 
-    // Carregar tarefas do backend
-    // Ouve mudanças do projeto selecionado (outra página selecionou outro projeto)
     useEffect(() => {
         const handler = (e: StorageEvent) => {
             if (e.key === 'projetoSelecionadoId') {
@@ -64,7 +70,23 @@ export default function Tarefas() {
         setError(null);
         try {
             const data = await ApiService.listarTarefasDoProjeto(pid);
-            setTarefas(data || []);
+            console.log('📋 Tarefas carregadas:', data);
+
+            const tarefasComAnexos = await Promise.all(
+                (data || []).map(async (tarefa: Tarefa) => {
+                    try {
+                        const anexosResponse = await axios.get(`http://localhost:8080/api/anexos/tarefa/${tarefa.id}`);
+                        console.log(`📎 Anexos da tarefa ${tarefa.nome}:`, anexosResponse.data);
+                        return { ...tarefa, anexos: anexosResponse.data };
+                    } catch (error) {
+                        console.log(`⚠️ Erro ao carregar anexos da tarefa ${tarefa.nome}:`, error);
+                        return { ...tarefa, anexos: [] };
+                    }
+                })
+            );
+
+            console.log('✅ Tarefas com anexos:', tarefasComAnexos);
+            setTarefas(tarefasComAnexos);
         } catch (error: any) {
             console.error("Erro ao carregar tarefas:", error);
             setError(error?.message || 'Falha ao carregar');
@@ -103,44 +125,17 @@ export default function Tarefas() {
         setIsModalOpen(true);
     }
 
-    async function handleSave(data: {
-        name: string;
-        description: string;
-        responsible: string[];
-        endDate: string;
-        status: Status;
-        comment: string;
-    }) {
-        if (!projetoId) return;
-        const tarefaPayload = {
-            nome: data.name,
-            descricao: data.description,
-            status: data.status,
-            comentario: data.comment,
-            prazoFinal: data.endDate ? new Date(data.endDate).toISOString() : null,
-            projetoId: projetoId,
-            usuarioIds: data.responsible
-        };
-        try {
-            if (editarTarefa) {
-                await ApiService.atualizarTarefa(editarTarefa.id, tarefaPayload);
-            } else {
-                await ApiService.criarTarefa(tarefaPayload);
-            }
-            if (projetoId) await carregarTarefas(projetoId);
-            setIsModalOpen(false);
-            setEditarTarefa(null);
-        } catch (error) {
-            console.error("Erro ao salvar tarefa:", error);
+    async function handleSave(tarefaCriada: any) {
+        if (projetoId) {
+            await carregarTarefas(projetoId);
         }
+        setIsModalOpen(false);
+        setEditarTarefa(null);
     }
 
     async function handleDelete(tarefaId: string) {
-        try {
-            await ApiService.excluirTarefa(tarefaId);
-            if (projetoId) await carregarTarefas(projetoId);
-        } catch (error) {
-            console.error("Erro ao excluir:", error);
+        if (projetoId) {
+            await carregarTarefas(projetoId);
         }
         setIsModalOpen(false);
         setEditarTarefa(null);
@@ -150,13 +145,23 @@ export default function Tarefas() {
     function iniciarExclusao(e: React.MouseEvent, tarefaId: string) {
         e.stopPropagation();
         if (confirmandoExclusaoId === tarefaId) {
-            handleDelete(tarefaId);
+            handleDeleteCard(tarefaId);
         } else {
             setConfirmandoExclusaoId(tarefaId);
             setTimeout(() => {
                 setConfirmandoExclusaoId((curr) => (curr === tarefaId ? null : curr));
             }, 4000);
         }
+    }
+
+    async function handleDeleteCard(tarefaId: string) {
+        try {
+            await ApiService.excluirTarefa(tarefaId);
+            if (projetoId) await carregarTarefas(projetoId);
+        } catch (error) {
+            console.error("Erro ao excluir:", error);
+        }
+        setConfirmandoExclusaoId(null);
     }
 
     function cancelarExclusao(e: React.MouseEvent) {
@@ -189,6 +194,20 @@ export default function Tarefas() {
         }
     }
 
+    const getFileTypeLabel = (contentType: string): string => {
+        if (contentType.startsWith('image/')) return 'IMG';
+        if (contentType === 'application/pdf') return 'PDF';
+        if (contentType.startsWith('video/')) return 'VÍD';
+        return 'ARQ';
+    };
+
+    const getFileTypeColor = (contentType: string): string => {
+        if (contentType.startsWith('image/')) return 'bg-blue-100 text-blue-700';
+        if (contentType === 'application/pdf') return 'bg-red-100 text-red-700';
+        if (contentType.startsWith('video/')) return 'bg-purple-100 text-purple-700';
+        return 'bg-gray-100 text-gray-700';
+    };
+
     const columns = [
         { id: "Pendente", nome: "Pendentes", color: "text-yellow-700" },
         { id: "Desenvolvimento", nome: "Desenvolvimento", color: "text-gray-500" },
@@ -208,7 +227,7 @@ export default function Tarefas() {
             <Sidebar />
 
             <DragDropContext onDragEnd={onDragEnd}>
-                <div className="flex-1 bg-white rounded-3xl  p-8 shadow-lg mt-8 mb-8 mx-4 custom-scrollbar">
+                <div className="flex-1 bg-white rounded-3xl p-8 shadow-lg mt-8 mb-8 mx-4 custom-scrollbar">
                     <div className="flex flex-row justify-center gap-10 w-full flex-1">
                         {columns.map((col) => (
                             <Droppable key={col.id} droppableId={col.id}>
@@ -234,25 +253,109 @@ export default function Tarefas() {
                                                             }`}
                                                         onClick={() => handleOpenEdit(tarefa)}
                                                     >
-                                                        <button
-                                                            onClick={(e) => iniciarExclusao(e, tarefa.id)}
-                                                            className="absolute top-2 right-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-full p-1"
-                                                        >
-                                                            {confirmandoExclusaoId === tarefa.id ? 'Confirmar' : <FaTrash size={12} />}
-                                                        </button>
-                                                        {confirmandoExclusaoId === tarefa.id && (
-                                                            <button onClick={cancelarExclusao} className="absolute top-2 right-16 text-xs text-gray-500 hover:text-gray-700">Cancelar</button>
+                                                        {confirmandoExclusaoId === tarefa.id ? (
+                                                            <div className="absolute top-2 right-2 flex flex-col gap-1 z-10">
+                                                                <button
+                                                                    onClick={(e) => iniciarExclusao(e, tarefa.id)}
+                                                                    className="px-2 py-1 text-xs font-semibold bg-red-600 text-white rounded hover:bg-red-700 whitespace-nowrap"
+                                                                >
+                                                                    Confirmar
+                                                                </button>
+                                                                <button
+                                                                    onClick={cancelarExclusao}
+                                                                    className="px-2 py-1 text-xs font-semibold bg-gray-300 text-gray-700 rounded hover:bg-gray-400 whitespace-nowrap"
+                                                                >
+                                                                    Cancelar
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                onClick={(e) => iniciarExclusao(e, tarefa.id)}
+                                                                className="absolute top-2 right-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-full p-1"
+                                                            >
+                                                                <FaTrash size={12} />
+                                                            </button>
                                                         )}
 
                                                         <div className="flex flex-col justify-between">
                                                             <div className="flex flex-col justify-center gap-2 pr-6">
-                                                                <span className="text-lg">{tarefa.nome}</span>
-                                                                <p>{tarefa.descricao}</p>
+                                                                <span className="text-lg font-semibold">{tarefa.nome}</span>
+                                                                <p className="text-sm text-gray-600">{tarefa.descricao}</p>
                                                                 {tarefa.comentario && (
                                                                     <p className="text-sm text-gray-600 italic">"{tarefa.comentario}"</p>
                                                                 )}
+
+                                                                {tarefa.anexos && tarefa.anexos.length > 0 && (
+                                                                    <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-300 shadow-sm">
+                                                                        <div className="flex items-center gap-2 mb-3">
+                                                                            <FaPaperclip className="text-blue-600" size={16} />
+                                                                            <span className="text-sm font-bold text-blue-800">
+                                                                                {tarefa.anexos.length} Anexo{tarefa.anexos.length > 1 ? 's' : ''}
+                                                                            </span>
+                                                                        </div>
+
+                                                                        {/* Primeiro arquivo em DESTAQUE */}
+                                                                        <div className="mb-2 bg-white p-3 rounded-lg border-2 border-blue-200 shadow-md">
+                                                                            {/* TIPO DO ARQUIVO - GRANDE E VISÍVEL */}
+                                                                            <div className="flex items-center gap-2 mb-2">
+                                                                                {tarefa.anexos[0].contentType.startsWith('image/') && (
+                                                                                    <>
+                                                                                        <div className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm font-bold shadow-sm">
+                                                                                            🖼️ IMAGEM
+                                                                                        </div>
+                                                                                        <span className="text-xs text-gray-500 font-medium">
+                                                                                            {tarefa.anexos[0].contentType.split('/')[1].toUpperCase()}
+                                                                                        </span>
+                                                                                    </>
+                                                                                )}
+                                                                                {tarefa.anexos[0].contentType === 'application/pdf' && (
+                                                                                    <div className="px-3 py-1 bg-red-600 text-white rounded-md text-sm font-bold shadow-sm">
+                                                                                        📄 PDF
+                                                                                    </div>
+                                                                                )}
+                                                                                {tarefa.anexos[0].contentType.startsWith('video/') && (
+                                                                                    <>
+                                                                                        <div className="px-3 py-1 bg-purple-600 text-white rounded-md text-sm font-bold shadow-sm">
+                                                                                            🎬 VÍDEO
+                                                                                        </div>
+                                                                                        <span className="text-xs text-gray-500 font-medium">
+                                                                                            {tarefa.anexos[0].contentType.split('/')[1].toUpperCase()}
+                                                                                        </span>
+                                                                                    </>
+                                                                                )}
+                                                                            </div>
+
+                                                                            {/* NOME DO ARQUIVO - GRANDE E VISÍVEL */}
+                                                                            <p className="text-sm font-bold text-gray-900 break-words leading-tight" title={tarefa.anexos[0]?.nomeOriginal}>
+                                                                                📎 {tarefa.anexos[0]?.nomeOriginal}
+                                                                            </p>
+                                                                        </div>
+
+                                                                        {/* Outros arquivos */}
+                                                                        {tarefa.anexos.length > 1 && (
+                                                                            <div className="flex flex-wrap gap-2">
+                                                                                {tarefa.anexos.slice(1, 4).map((anexo: AnexoInfo) => (
+                                                                                    <div
+                                                                                        key={anexo.id}
+                                                                                        className="text-xs px-2 py-1 bg-white border-2 border-gray-300 rounded font-semibold text-gray-700 truncate max-w-[100px] shadow-sm"
+                                                                                        title={anexo.nomeOriginal}
+                                                                                    >
+                                                                                        {anexo.nomeOriginal.length > 12
+                                                                                            ? anexo.nomeOriginal.substring(0, 12) + '...'
+                                                                                            : anexo.nomeOriginal}
+                                                                                    </div>
+                                                                                ))}
+                                                                                {tarefa.anexos.length > 4 && (
+                                                                                    <div className="text-xs px-3 py-1 bg-gray-300 rounded-md font-bold text-gray-800 shadow-sm">
+                                                                                        +{tarefa.anexos.length - 4} mais
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                            <div className="flex justify-between mt-7">
+                                                            <div className="flex justify-between mt-4">
                                                                 <p className="flex items-center gap-1 text-xs text-gray-600">
                                                                     <FaRegUserCircle />
                                                                     {(() => {
@@ -262,10 +365,10 @@ export default function Tarefas() {
                                                                             .map(id => membros.find(m => m.usuarioId === id)?.nome || id)
                                                                             .filter(Boolean);
                                                                         if (nomes.length <= 2) return nomes.join(', ');
-                                                                        return nomes.slice(0,2).join(', ') + ` (+${nomes.length-2})`;
+                                                                        return nomes.slice(0, 2).join(', ') + ` (+${nomes.length - 2})`;
                                                                     })()}
                                                                 </p>
-                                                                <p className="flex items-center gap-1">
+                                                                <p className="flex items-center gap-1 text-xs text-gray-600">
                                                                     {formatarData(tarefa.prazoFinal)}
                                                                     <FaCalendarAlt />
                                                                 </p>
@@ -295,6 +398,7 @@ export default function Tarefas() {
                 onClose={() => setIsModalOpen(false)}
                 onSave={handleSave}
                 onDelete={handleDelete}
+                projetoId={projetoId || ""}
                 membrosProjeto={membros.map(m => ({ id: m.usuarioId, nome: m.nome, email: m.email }))}
                 initialData={editarTarefa ? {
                     id: editarTarefa.id,
