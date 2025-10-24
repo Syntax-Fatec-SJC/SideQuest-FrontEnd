@@ -64,36 +64,39 @@ export default function Sidebar() {
           <h1 className="font-bold text-xl mt-2 truncate max-w-[160px]" title={usuario?.nome || 'Usuário'}>
             {usuario?.nome || 'Usuário'}
           </h1>
-          <p className="text-sm text-gray-500 truncate max-w-[160px]" title={usuario?.email || ''}>
-            {usuario?.email || 'Sem email'}
-          </p>
-        </div>
-
+            <p className="text-sm text-gray-500 truncate max-w-[160px]" title={usuario?.email || ''}>
+              {usuario?.email || 'Sem email'}
+            </p>
+          </div>
+  
         <div className="flex flex-col gap-2 px-4">
-          <SidebarLink icon={MdOutlineDashboard} label="Dashboard (Dev.)" to="/projetos" />
-          {projetoSelecionadoId && <SidebarLink icon={MdChecklist} label="Tarefas" to="/tarefas" />}
-          {projetoSelecionadoId && <SidebarLink icon={MdOutlinePeopleAlt} label="Membros" to="/membros" />}
+          <SidebarLink icon={MdOutlineDashboard} label="Dashboard" to="/dashboard" /> {/* Mudar Futuramente*/}
+          {projetoSelecionadoId && (
+            <>
+              <SidebarLink icon={MdChecklist} label="Tarefas" to="/tarefas" />
+              <SidebarLink icon={MdOutlinePeopleAlt} label="Membros" to="/membros" />
+            </>
+          )}
+          {/* Outros links permanecem sempre visíveis, mas podem ser condicionados futuramente */}
           <SidebarLink icon={MdOutlineCalendarToday} label="Calendário" to="/calendario" />
-          <SidebarLink icon={MdOutlineAssessment} label="Relatórios (Dev.)" to="/relatorio" />
+          <SidebarLink icon={MdOutlineAssessment} label="Relatórios" to="/relatorio" />
           <SidebarLink icon={MdNotificationsNone} label="Avisos" to="/avisos" />
-        </div>
-
-        <div className="flex-1" />
-
-        <div className="flex flex-col gap-2 px-4 mb-4">
-          <SidebarLink icon={MdFolder} label="Projetos" to="/projetos" onClick={handleResetProjeto} />
-          <SidebarLink icon={MdLogout} label="Sair" onClick={handleLogout} to="/acesso" />
+          <div className="flex-1" />
+  
+          <div className="flex flex-col gap-2 px-4 mb-4">
+            <SidebarLink icon={MdFolder} label="Projetos" to="/projetos" onClick={handleResetProjeto} />
+            <SidebarLink icon={MdLogout} label="Sair" onClick={handleLogout} to="/acesso" />
+          </div>
         </div>
       </div>
-
-      {/* Menu inferior mobile */}
-{/* Menu inferior mobile */}
-<div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-lg sm:hidden z-40">
-  <div className="flex justify-around items-center h-16 px-2">
-    <Link to="/projetos" className="flex flex-col items-center text-xs">
-      <MdOutlineDashboard size={24} />
-      Dashboard
-    </Link>
+  
+        {/* Menu inferior mobile */}
+      <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-lg sm:hidden z-40">
+        <div className="flex justify-around items-center h-16 px-2">
+          <Link to="/projetos" className="flex flex-col items-center text-xs">
+            <MdOutlineDashboard size={24} />
+            Dashboard
+          </Link>
 
     <Link to="/calendario" className="flex flex-col items-center text-xs">
       <MdOutlineCalendarToday size={24} />

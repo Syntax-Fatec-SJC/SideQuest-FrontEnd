@@ -10,6 +10,10 @@ class UsuarioService extends ApiBase {
     return this.post<LoginResponse>('/login', dadosLogin);
   }
 
+  async realizarLogout(): Promise<void> {
+    return this.post<void>('/logout');
+  }
+
   async listarUsuarios(): Promise<UsuarioResumo[]> {
     return this.get<UsuarioResumo[]>('/usuarios');
   }

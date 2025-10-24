@@ -1,4 +1,4 @@
-import { RelatoriosContainer } from "./containers/RelatoriosContainerFinal";
+import { RelatoriosContainer } from "./containers/RelatoriosContainer";
 
 /**
  * Ponto de entrada da feature de relatórios.

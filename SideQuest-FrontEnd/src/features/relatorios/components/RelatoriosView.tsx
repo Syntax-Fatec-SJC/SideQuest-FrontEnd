@@ -25,7 +25,7 @@ export function RelatoriosView({
     return (
       <div className="flex relative">
         <Sidebar />
-        <div className="flex-1 p-4 custom-scrollbar flex flex-col justify-center items-center">
+        <div className="flex-1 p-4 mt-4 custom-scrollbar flex flex-col justify-center items-center">
           <div className="text-red-500 text-center">
             <p className="text-xl mb-2">Erro ao carregar relatórios</p>
             <p>{erro}</p>
