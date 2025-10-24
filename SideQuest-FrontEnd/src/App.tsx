@@ -7,7 +7,6 @@ import Tarefas from './features/tarefas/Tarefas';
 import Dashboard from './features/dashboard/Dashboard';
 import  Relatorio  from "./features/relatorios/Relatorio"; 
 import Avisos from './features/avisos/Avisos';
-import Relatorio from './features/relatorios/Relatorio';
 import { ToastProvider } from './shared/contexts/ToastContext';
 import { ToastContainer } from './shared/components/ui/ToastContainer';
 
