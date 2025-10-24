@@ -5,18 +5,47 @@ const BASE_URL = (import.meta.env && (import.meta.env.VITE_API_BASE as string)) 
 export class ApiBase {
   protected baseUrl = BASE_URL;
 
+  protected getHeaders(): HeadersInit {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest', // Proteção adicional contra CSRF
+    };
+
+    // Adicionar token JWT se existir (fallback para compatibilidade)
+    const token = localStorage.getItem('token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    return headers;
+  }
+
   protected async makeRequest<T = unknown>(url: string, options: RequestInit = {}): Promise<T> {
     try {
       const finalUrl = url.startsWith('http') ? url : `${this.baseUrl}${url}`;
       const response = await fetch(finalUrl, {
         headers: {
-          'Content-Type': 'application/json',
+          ...this.getHeaders(),
           ...options.headers,
         },
+        credentials: 'include', // IMPORTANTE: Envia cookies automaticamente
         ...options,
       });
 
       if (!response.ok) {
+        // Se for 401 (não autorizado), limpar token e redirecionar para login
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('usuario');
+          localStorage.removeItem('usuarioId');
+          localStorage.removeItem('usuarioLogado');
+          
+          // Apenas redirecionar se não estiver já na página de login
+          if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/acesso')) {
+            window.location.href = '/acesso';
+          }
+        }
+        
         const errorData = await response.text();
         throw new Error(`Erro HTTP ${response.status}: ${errorData}`);
       }

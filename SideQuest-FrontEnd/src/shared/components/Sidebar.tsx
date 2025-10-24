@@ -69,15 +69,18 @@ export default function Sidebar() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-2 px-4">
-          <SidebarLink icon={MdOutlineDashboard} label="Dashboard (Dev.)" to="/projetos" />
-          {projetoSelecionadoId && <SidebarLink icon={MdChecklist} label="Tarefas" to="/tarefas" />}
-          {projetoSelecionadoId && <SidebarLink icon={MdOutlinePeopleAlt} label="Membros" to="/membros" />}
-          <SidebarLink icon={MdOutlineCalendarToday} label="Calendário (Dev.)" to="/calendario" />
-          <SidebarLink icon={MdOutlineAssessment} label="Relatórios (Dev.)" to="/relatorio" />
-          <SidebarLink icon={MdNotificationsNone} label="Avisos" to="/avisos" />
-        </div>
-
+      <div className="flex flex-col gap-2 px-4">
+        <SidebarLink icon={MdOutlineDashboard} label="Dashboard" to="/dashboard" /> {/* Mudar Futuramente*/}
+        {projetoSelecionadoId && (
+          <>
+            <SidebarLink icon={MdChecklist} label="Tarefas" to="/tarefas" />
+            <SidebarLink icon={MdOutlinePeopleAlt} label="Membros" to="/membros" />
+          </>
+        )}
+        {/* Outros links permanecem sempre visíveis, mas podem ser condicionados futuramente */}
+        <SidebarLink icon={MdOutlineCalendarToday} label="Calendário (Dev.)" to="/calendario" />
+        <SidebarLink icon={MdOutlineAssessment} label="Relatórios" to="/relatorio" />
+        <SidebarLink icon={MdNotificationsNone} label="Avisos" to="/avisos" />
         <div className="flex-1" />
 
         <div className="flex flex-col gap-2 px-4 mb-4">

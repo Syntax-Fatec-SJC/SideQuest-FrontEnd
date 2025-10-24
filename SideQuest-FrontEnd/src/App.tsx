@@ -4,6 +4,8 @@ import Projetos from './features/projetos/Projetos';
 import Membros from './features/membros/Membros';
 import Acesso from './features/auth/Acesso';
 import Tarefas from './features/tarefas/Tarefas';
+import Dashboard from './features/dashboard/Dashboard';
+import  Relatorio  from "./features/relatorios/Relatorio"; 
 import Avisos from './features/avisos/Avisos';
 import Relatorio from './features/relatorios/Relatorio';
 import { ToastProvider } from './shared/contexts/ToastContext';
@@ -53,6 +55,9 @@ function App() {
           <Route path="/tarefas" element={<Tarefas />} />
           <Route path="/membros" element={<Membros />} />
           <Route path="/relatorio" element={<Relatorio />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+
+
           <Route path="/avisos" element={<Avisos />} />
         </Routes>
         <ToastContainer />
