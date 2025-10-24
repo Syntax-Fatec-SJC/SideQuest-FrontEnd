@@ -184,7 +184,7 @@ export default function Tarefas() {
             <Sidebar />
 
             <DragDropContext onDragEnd={onDragEnd}>
-                <div className="flex-1 bg-white rounded-3xl  p-8 shadow-lg mt-8 mb-8 mx-4 custom-scrollbar">
+                <main className="flex-1 flex flex-col bg-white rounded-3xl p-4 sm:p-8 mt-8 mb-20 sm:mb-8 mx-2 sm:mx-4">
                     <div className="flex flex-row justify-center gap-10 w-full flex-1">
                         {columns.map((col) => (
                             <Droppable key={col.id} droppableId={col.id}>
@@ -251,7 +251,7 @@ export default function Tarefas() {
                     >
                         <h5 className="text-3xl text-white font-mono">Criar Tarefa</h5>
                     </div>
-                </div>
+                </main>
             </DragDropContext>
 
             <ModalTarefa

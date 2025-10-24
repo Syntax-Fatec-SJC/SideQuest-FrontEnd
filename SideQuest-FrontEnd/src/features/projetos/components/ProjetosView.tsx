@@ -12,7 +12,7 @@ interface ProjetosViewProps {
   projetoSelecionadoId: string | null;
   creating: boolean;
   removendoId: string | null;
-  
+
   // Funções
   carregarProjetos: () => void;
   criarProjeto: (dados: {
@@ -49,10 +49,11 @@ export function ProjetosView({
   return (
     <div className="flex h-screen relative">
       <Sidebar />
-      <div className="flex-1 bg-white rounded-3xl overflow-auto p-8 shadow-lg mt-8 mb-8 mx-4 custom-scrollbar flex flex-col items-center">
+      <main className="flex-1 flex flex-col bg-white rounded-3xl p-4 sm:p-8 mt-8 mb-20 sm:mb-8 mx-2 sm:mx-4">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold mb-6 text-center text-azul-escuro">
           Gerenciar Projetos
         </h1>
+        <div className="flex-1 h-[calc(90vh-160px)] overflow-auto pb-16 sm:h-auto sm:overflow-visible sm:pb-0">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full max-w-[1100px]">
           <EstadoPrincipal
             loading={loading}
@@ -67,12 +68,13 @@ export function ProjetosView({
             onAbrirModal={abrirModal}
           />
         </div>
+        </div>
         <CriarProjetoModal
           isOpen={showModal}
           onClose={fecharModal}
-          onCreate={criarProjeto} 
+          onCreate={criarProjeto}
         />
-      </div>
+      </main>
     </div>
   );
 }

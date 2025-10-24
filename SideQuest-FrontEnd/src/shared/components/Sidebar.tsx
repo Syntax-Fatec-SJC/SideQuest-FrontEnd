@@ -78,7 +78,7 @@ export default function Sidebar() {
             </>
           )}
           {/* Outros links permanecem sempre visíveis, mas podem ser condicionados futuramente */}
-          <SidebarLink icon={MdOutlineCalendarToday} label="Calendário (Dev.)" to="/calendario" />
+          <SidebarLink icon={MdOutlineCalendarToday} label="Calendário" to="/calendario" />
           <SidebarLink icon={MdOutlineAssessment} label="Relatórios" to="/relatorio" />
           <SidebarLink icon={MdNotificationsNone} label="Avisos" to="/avisos" />
           <div className="flex-1" />
@@ -98,44 +98,45 @@ export default function Sidebar() {
             Dashboard
           </Link>
 
-          <Link to="/calendario" className="flex flex-col items-center text-xs">
-            <MdOutlineCalendarToday size={24} />
-            Calendário
-          </Link>
-          <Link to="/avisos" className="flex flex-col items-center text-xs">
-            <MdNotificationsNone size={24} />
-            Avisos
-          </Link>
-          <button
-            onClick={() => setExpandido(!expandido)}
-            className="flex flex-col items-center text-xs"
-          >
-            {expandido ? <MdKeyboardArrowLeft size={24} /> : <MdKeyboardArrowRight size={24} />}
-            Mais
-          </button>
-        </div>
+    <Link to="/calendario" className="flex flex-col items-center text-xs">
+      <MdOutlineCalendarToday size={24} />
+      Calendário
+    </Link>
+    <Link to="/avisos" className="flex flex-col items-center text-xs">
+      <MdNotificationsNone size={24} />
+      Avisos
+    </Link>
+    <button
+      onClick={() => setExpandido(!expandido)}
+      className="flex flex-col items-center text-xs"
+    >
+      {expandido ? <MdKeyboardArrowLeft size={24} /> : <MdKeyboardArrowRight size={24} />}
+      Mais
+    </button>
+  </div>
 
-        {expandido && (
-          <div className="flex justify-around items-center h-16 border-t border-gray-200 px-2">
-            {projetoSelecionadoId && (
-              <Link to="/membros" className="flex flex-col items-center text-xs">
-                <MdOutlinePeopleAlt size={24} />
-                Membros
-              </Link>
-            )}
-            {projetoSelecionadoId && (
-              <Link to="/tarefas" className="flex flex-col items-center text-xs">
-                <MdChecklist size={24} />
-                Tarefas
-              </Link>
-            )}
-            <Link to="/relatorios" className="flex flex-col items-center text-xs">
-              <MdOutlineAssessment size={24} />
-              Relatórios
-            </Link>
-          </div>
-        )}
-      </div>
+  {expandido && (
+    <div className="flex justify-around items-center h-16 border-t border-gray-200 px-2">
+      {projetoSelecionadoId && (
+        <Link to="/membros" className="flex flex-col items-center text-xs">
+          <MdOutlinePeopleAlt size={24} />
+          Membros
+        </Link>
+      )}
+      {projetoSelecionadoId && (
+        <Link to="/tarefas" className="flex flex-col items-center text-xs">
+          <MdChecklist size={24} />
+          Tarefas
+        </Link>
+      )}
+      <Link to="/relatorio" className="flex flex-col items-center text-xs">
+        <MdOutlineAssessment size={24} />
+        Relatórios
+      </Link>
+    </div>
+  )}
+</div>
+
     </>
     
   );

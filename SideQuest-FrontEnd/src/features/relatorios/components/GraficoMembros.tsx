@@ -20,22 +20,22 @@ const GraficoMembros: React.FC<GraficoMembrosProps> = ({
     .slice(0, maximoDeBarras);
 
   const alturaBarra = 50;
-  const alturaGrafico = Math.max(dadosFiltrados.length * (alturaBarra + 50), 150); 
+  const alturaGrafico = Math.max(dadosFiltrados.length * (alturaBarra + 50), 150);
 
   const nenhumMembroConcluiu = dadosFiltrados.length === 0;
 
   const larguraEixoY = Math.min(
-    Math.max(...dadosFiltrados.map((m) => m.nome.length)) * 8, 
-    120 
+    Math.max(...dadosFiltrados.map((m) => m.nome.length)) * 8,
+    120
   );
 
   return (
-    <div className="bg-white border border-gray-200 rounded-3xl shadow-lg p-8 w-full flex flex-col items-center">
+    <div className="bg-white border border-gray-200 rounded-3xl shadow-lg p-4 sm:p-8 w-full flex flex-col items-center">
       <h2 className="text-3xl sm:text-4xl md:text-5xl font-semibold mb-6 text-center text-azul-escuro">
         MEMBROS
       </h2>
 
-      <div className="flex justify-center w-full px-4">
+      <div className="flex flex-col lg:flex-row justify-center w-full gap-6">
         {nenhumMembroConcluiu ? (
           <div className="flex items-center justify-center w-full h-60">
             <span className="text-gray-500 text-lg font-medium text-center">
@@ -43,10 +43,10 @@ const GraficoMembros: React.FC<GraficoMembrosProps> = ({
             </span>
           </div>
         ) : (
-          <div className="grid grid-cols-[1fr_auto] gap-6 w-full">
+          <>
             {/* Gráfico */}
-            <div className="min-w-[300px] flex-1">
-              <ResponsiveContainer width="90%" height={alturaGrafico}>
+            <div className="w-full lg:flex-1 min-w-[280px]">
+              <ResponsiveContainer width="100%" height={alturaGrafico}>
                 <BarChart
                   data={dadosFiltrados}
                   layout="vertical"
@@ -87,7 +87,7 @@ const GraficoMembros: React.FC<GraficoMembrosProps> = ({
             </div>
 
             {/* Lista de membros */}
-            <div className="w-[320px] flex flex-col gap-4">
+            <div className="w-full lg:w-[320px] flex flex-col gap-4 overflow-auto max-h-[70vh] lg:max-h-full">
               {dadosFiltrados.map((membro) => (
                 <div
                   key={membro.nome}
@@ -100,11 +100,11 @@ const GraficoMembros: React.FC<GraficoMembrosProps> = ({
                 </div>
               ))}
             </div>
-          </div>
+          </>
         )}
       </div>
 
-      {/* Recharts*/}
+      {/* Recharts ajustes visuais */}
       <style>{`
         .recharts-wrapper,
         .recharts-surface,

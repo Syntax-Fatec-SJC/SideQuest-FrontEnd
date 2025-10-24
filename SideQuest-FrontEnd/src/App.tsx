@@ -7,6 +7,7 @@ import Tarefas from './features/tarefas/Tarefas';
 import Dashboard from './features/dashboard/Dashboard';
 import  Relatorio  from "./features/relatorios/Relatorio"; 
 import Avisos from './features/avisos/Avisos';
+import Calendario from './features/calendario/Calendario';
 import { ToastProvider } from './shared/contexts/ToastContext';
 import { ToastContainer } from './shared/components/ui/ToastContainer';
 
@@ -34,6 +35,9 @@ function TitleUpdater() {
       case '/avisos':
         document.title = 'Avisos';
         break;
+      case '/calendario':
+        document.title = 'Calendário';
+        break;
       default:
         document.title = 'SideQuest';
     }
@@ -58,6 +62,7 @@ function App() {
 
 
           <Route path="/avisos" element={<Avisos />} />
+          <Route path="/calendario" element={<Calendario />} />
         </Routes>
         <ToastContainer />
       </BrowserRouter>
