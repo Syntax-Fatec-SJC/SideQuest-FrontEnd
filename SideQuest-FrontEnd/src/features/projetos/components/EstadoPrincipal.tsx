@@ -84,19 +84,28 @@ export function EstadoPrincipal({
           <div
             key={projeto.id}
             onClick={() => onSelecionar(projeto.id)}
-            className={`group relative cursor-pointer w-full h-44 sm:h-52 rounded-lg flex flex-col items-center justify-center p-4 sm:p-6 bg-pastel shadow-md transition border-2 ${
-              selecionado 
-                ? 'border-azul-escuro ring-2 ring-azul-escuro/40' 
-                : 'border-transparent hover:shadow-lg'
-            }`}
+            className={`group relative cursor-pointer w-full h-44 sm:h-52 rounded-lg flex flex-col items-center justify-center p-4 sm:p-6 bg-pastel shadow-md transition border-2 ${selecionado
+              ? 'border-azul-escuro ring-2 ring-azul-escuro/40'
+              : 'border-transparent hover:shadow-lg'
+              }`}
           >
             <button
-              onClick={(e) => onExcluir(projeto.id, e as React.MouseEvent<HTMLButtonElement>)}
+              onClick={(e) => {
+                e.stopPropagation(); // evita que o card seja clicado
+                onExcluir(projeto.id, e);
+              }}
               disabled={removendoId === projeto.id}
-              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition text-red-600 hover:text-red-700 bg-white/70 rounded px-2 py-1 text-xs"
+              className={`
+    absolute top-2 right-2
+    px-2 py-1 text-xs rounded bg-white/70
+    text-red-600 hover:text-red-700
+    transition
+    ${removendoId === projeto.id ? "opacity-100" : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100"}
+  `}
             >
               {removendoId === projeto.id ? "..." : <FaTrash />}
             </button>
+
             <FaFolder className="text-cinza-medio text-6xl sm:text-8xl mb-2 sm:mb-3" />
             <span className="text-base sm:text-lg text-cinza-claro font-bold text-center line-clamp-2">
               {projeto.nome}

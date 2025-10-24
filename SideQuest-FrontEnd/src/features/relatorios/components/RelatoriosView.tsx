@@ -38,7 +38,8 @@ export function RelatoriosView({
   return (
     <div className="flex relative">
       <Sidebar />
-      <div className="flex-1 p-4 custom-scrollbar flex flex-col justify-start items-center gap-8">
+      <div
+        className="flex-1 p-4 custom-scrollbar flex flex-col justify-start items-center gap-8 max-sm:mt-4 max-sm:mb-20 max-sm:mx-2 max-sm:p-2">
         {/* Gráfico de Tarefas*/}
         {tarefasLoading ? (
           <div className="w-full flex justify-center items-center min-h-[300px]">

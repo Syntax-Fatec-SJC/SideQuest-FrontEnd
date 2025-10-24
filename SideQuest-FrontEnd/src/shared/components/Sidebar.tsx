@@ -73,7 +73,7 @@ export default function Sidebar() {
           <SidebarLink icon={MdOutlineDashboard} label="Dashboard (Dev.)" to="/projetos" />
           {projetoSelecionadoId && <SidebarLink icon={MdChecklist} label="Tarefas" to="/tarefas" />}
           {projetoSelecionadoId && <SidebarLink icon={MdOutlinePeopleAlt} label="Membros" to="/membros" />}
-          <SidebarLink icon={MdOutlineCalendarToday} label="Calendário (Dev.)" to="/calendario" />
+          <SidebarLink icon={MdOutlineCalendarToday} label="Calendário" to="/calendario" />
           <SidebarLink icon={MdOutlineAssessment} label="Relatórios (Dev.)" to="/relatorio" />
           <SidebarLink icon={MdNotificationsNone} label="Avisos" to="/avisos" />
         </div>
@@ -87,51 +87,53 @@ export default function Sidebar() {
       </div>
 
       {/* Menu inferior mobile */}
-      <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-lg sm:hidden z-40">
-        <div className="flex justify-around items-center h-16 px-2">
-          <Link to="/projetos" className="flex flex-col items-center text-xs">
-            <MdOutlineDashboard size={24} />
-            Dashboard
-          </Link>
+{/* Menu inferior mobile */}
+<div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-lg sm:hidden z-40">
+  <div className="flex justify-around items-center h-16 px-2">
+    <Link to="/projetos" className="flex flex-col items-center text-xs">
+      <MdOutlineDashboard size={24} />
+      Dashboard
+    </Link>
 
-          <Link to="/calendario" className="flex flex-col items-center text-xs">
-            <MdOutlineCalendarToday size={24} />
-            Calendário
-          </Link>
-          <Link to="/avisos" className="flex flex-col items-center text-xs">
-            <MdNotificationsNone size={24} />
-            Avisos
-          </Link>
-          <button
-            onClick={() => setExpandido(!expandido)}
-            className="flex flex-col items-center text-xs"
-          >
-            {expandido ? <MdKeyboardArrowLeft size={24} /> : <MdKeyboardArrowRight size={24} />}
-            Mais
-          </button>
-        </div>
+    <Link to="/calendario" className="flex flex-col items-center text-xs">
+      <MdOutlineCalendarToday size={24} />
+      Calendário
+    </Link>
+    <Link to="/avisos" className="flex flex-col items-center text-xs">
+      <MdNotificationsNone size={24} />
+      Avisos
+    </Link>
+    <button
+      onClick={() => setExpandido(!expandido)}
+      className="flex flex-col items-center text-xs"
+    >
+      {expandido ? <MdKeyboardArrowLeft size={24} /> : <MdKeyboardArrowRight size={24} />}
+      Mais
+    </button>
+  </div>
 
-        {expandido && (
-          <div className="flex justify-around items-center h-16 border-t border-gray-200 px-2">
-            {projetoSelecionadoId && (
-              <Link to="/membros" className="flex flex-col items-center text-xs">
-                <MdOutlinePeopleAlt size={24} />
-                Membros
-              </Link>
-            )}
-            {projetoSelecionadoId && (
-              <Link to="/tarefas" className="flex flex-col items-center text-xs">
-                <MdChecklist size={24} />
-                Tarefas
-              </Link>
-            )}
-            <Link to="/relatorios" className="flex flex-col items-center text-xs">
-              <MdOutlineAssessment size={24} />
-              Relatórios
-            </Link>
-          </div>
-        )}
-      </div>
+  {expandido && (
+    <div className="flex justify-around items-center h-16 border-t border-gray-200 px-2">
+      {projetoSelecionadoId && (
+        <Link to="/membros" className="flex flex-col items-center text-xs">
+          <MdOutlinePeopleAlt size={24} />
+          Membros
+        </Link>
+      )}
+      {projetoSelecionadoId && (
+        <Link to="/tarefas" className="flex flex-col items-center text-xs">
+          <MdChecklist size={24} />
+          Tarefas
+        </Link>
+      )}
+      <Link to="/relatorio" className="flex flex-col items-center text-xs">
+        <MdOutlineAssessment size={24} />
+        Relatórios
+      </Link>
+    </div>
+  )}
+</div>
+
     </>
     
   );
