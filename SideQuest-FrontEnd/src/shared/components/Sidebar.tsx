@@ -2,7 +2,7 @@ import {
   MdOutlineDashboard, MdChecklist, MdOutlineCalendarToday, MdOutlineAssessment,
   MdOutlinePeopleAlt, MdNotificationsNone, MdFolder, MdLogout, MdKeyboardArrowRight, MdKeyboardArrowLeft
 } from "react-icons/md";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from 'react';
 import type { IconType } from "react-icons";
 import useAuth from '../hooks/useAuth';
@@ -28,9 +28,13 @@ const SidebarLink = ({ icon: Icon, label, to = "#", onClick }: SidebarLinkProps)
 
 export default function Sidebar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout, usuario } = useAuth();
   const [projetoSelecionadoId, setProjetoSelecionadoId] = useState<string | null>(() => localStorage.getItem('projetoSelecionadoId'));
   const [expandido, setExpandido] = useState(false);
+
+  const rotasDeProjeto = ['/tarefas', '/membros', '/relatorio'];
+  const estaEmRotaDeProjeto = rotasDeProjeto.includes(location.pathname);
 
   useEffect(() => {
     const handler = (e: StorageEvent) => {
@@ -61,26 +65,25 @@ export default function Sidebar() {
           <div className="bg-gray-300 rounded-full w-20 h-20 flex items-center justify-center">
             <span className="text-black text-5xl"><BiSolidUser /></span>
           </div>
-          <h1 className="font-bold text-xl mt-2 truncate max-w-[160px]" title={usuario?.nome || 'Usuário'}>
+          <h1 className="font-bold text-xl mt-2 truncate max-w-160px" title={usuario?.nome || 'Usuário'}>
             {usuario?.nome || 'Usuário'}
           </h1>
-            <p className="text-sm text-gray-500 truncate max-w-[160px]" title={usuario?.email || ''}>
+            <p className="text-sm text-gray-500 truncate max-w-160px" title={usuario?.email || ''}>
               {usuario?.email || 'Sem email'}
             </p>
           </div>
   
         <div className="flex flex-col gap-2 px-4">
-          <SidebarLink icon={MdOutlineDashboard} label="Dashboard" to="/dashboard" /> {/* Mudar Futuramente*/}
-          {projetoSelecionadoId && (
+          <SidebarLink icon={MdOutlineDashboard} label="Dashboard" to="/dashboard" />
+          {projetoSelecionadoId && estaEmRotaDeProjeto && (
             <>
               <SidebarLink icon={MdChecklist} label="Tarefas" to="/tarefas" />
               <SidebarLink icon={MdOutlinePeopleAlt} label="Membros" to="/membros" />
+              <SidebarLink icon={MdOutlineAssessment} label="Relatórios" to="/relatorio" />
             </>
           )}
-          {/* Outros links permanecem sempre visíveis, mas podem ser condicionados futuramente */}
           <SidebarLink icon={MdOutlineCalendarToday} label="Calendário" to="/calendario" />
-          <SidebarLink icon={MdOutlineAssessment} label="Relatórios" to="/relatorio" />
-          <SidebarLink icon={MdNotificationsNone} label="Avisos" to="/avisos" />
+          <SidebarLink icon={MdNotificationsNone} label="Avisos(Dev.)" to="/avisos" />
           <div className="flex-1" />
   
           <div className="flex flex-col gap-2 px-4 mb-4">
@@ -117,22 +120,22 @@ export default function Sidebar() {
 
   {expandido && (
     <div className="flex justify-around items-center h-16 border-t border-gray-200 px-2">
-      {projetoSelecionadoId && (
-        <Link to="/membros" className="flex flex-col items-center text-xs">
-          <MdOutlinePeopleAlt size={24} />
-          Membros
-        </Link>
+      {projetoSelecionadoId && estaEmRotaDeProjeto && (
+        <>
+          <Link to="/membros" className="flex flex-col items-center text-xs">
+            <MdOutlinePeopleAlt size={24} />
+            Membros
+          </Link>
+          <Link to="/tarefas" className="flex flex-col items-center text-xs">
+            <MdChecklist size={24} />
+            Tarefas
+          </Link>
+          <Link to="/relatorio" className="flex flex-col items-center text-xs">
+            <MdOutlineAssessment size={24} />
+            Relatórios
+          </Link>
+        </>
       )}
-      {projetoSelecionadoId && (
-        <Link to="/tarefas" className="flex flex-col items-center text-xs">
-          <MdChecklist size={24} />
-          Tarefas
-        </Link>
-      )}
-      <Link to="/relatorio" className="flex flex-col items-center text-xs">
-        <MdOutlineAssessment size={24} />
-        Relatórios
-      </Link>
     </div>
   )}
 </div>

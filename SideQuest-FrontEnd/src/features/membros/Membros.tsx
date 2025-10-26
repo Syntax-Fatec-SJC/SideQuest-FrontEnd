@@ -276,7 +276,7 @@ export default function Membros() {
                                             <span className="font-semibold flex items-center gap-2">
                                                 {m.nome}
                                                 {m.criador && (
-                                                    <span className="text-xs bg-indigo-600 text-white px-2 py-[2px] rounded-full">
+                                                    <span className="text-xs bg-indigo-600 text-white px-2 py-2px rounded-full">
                                                         Criador
                                                     </span>
                                                 )}

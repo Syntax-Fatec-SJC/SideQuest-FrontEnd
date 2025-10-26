@@ -18,7 +18,7 @@ export function CardAtualizacao({
   return (
     <div className={`bg-white mb-4 rounded-3xl p-6 flex flex-col gap-4 w-full shadow-sm ${className}`}>
       <h2 className="text-2xl font-semibold text-[#1D428A] mb-4 text-center">
-        ATUALIZAÇÕES
+        ATUALIZAÇÕES(Dev.)
       </h2>
 
       <div
