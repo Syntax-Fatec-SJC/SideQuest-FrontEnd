@@ -3,26 +3,19 @@ import { dashboardService } from '../../../services/DashboardService';
 import type { Tarefa } from '../../../types/Tarefa';
 import { useToast } from '../../../shared/hooks/useToast';
 
-export function useProximasEntregas(usuarioId: string | null) {
+export function useProximasEntregas() {
   const [entregas, setEntregas] = useState<Tarefa[]>([]);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const { show } = useToast();
 
   useEffect(() => {
-    if (!usuarioId) {
-      setEntregas([]);
-      setLoading(false);
-      setErro(null);
-      return;
-    }
-
-    const carregar = async () => {
+    async function carregarEntregas() {
       setLoading(true);
       setErro(null);
 
       try {
-        const dados = await dashboardService.listarProximasEntregas(usuarioId);
+        const dados = await dashboardService.listarProximasEntregas();
         setEntregas(dados);
       } catch (error) {
         const mensagem = error instanceof Error ? error.message : 'Erro ao carregar próximas entregas';
@@ -32,10 +25,10 @@ export function useProximasEntregas(usuarioId: string | null) {
       } finally {
         setLoading(false);
       }
-    };
+    }
 
-    carregar();
-  }, [usuarioId, show]);
+    void carregarEntregas();
+  }, []);
 
   return { entregas, loading, erro };
 }

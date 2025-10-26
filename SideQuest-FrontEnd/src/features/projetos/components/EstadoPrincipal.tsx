@@ -89,6 +89,14 @@ export function EstadoPrincipal({
               : 'border-transparent hover:shadow-lg'
               }`}
           >
+            <span
+              className={`absolute top-3 left-3 w-3 h-3 rounded-full
+                ${(projeto as any).status === 'ATIVO' ? 'bg-yellow-400' : ''}
+                ${(projeto as any).status === 'CONCLUIDO' ? 'bg-green-500' : ''}
+              `}
+              title={`Status: ${(projeto as any).status}`}
+            ></span>
+
             <button
               onClick={(e) => {
                 e.stopPropagation(); // evita que o card seja clicado
@@ -109,9 +117,6 @@ export function EstadoPrincipal({
             <FaFolder className="text-cinza-medio text-6xl sm:text-8xl mb-2 sm:mb-3" />
             <span className="text-base sm:text-lg text-cinza-claro font-bold text-center line-clamp-2">
               {projeto.nome}
-            </span>
-            <span className="mt-1 text-xs uppercase tracking-wide text-cinza-medio">
-              {projeto.status}
             </span>
           </div>
         );

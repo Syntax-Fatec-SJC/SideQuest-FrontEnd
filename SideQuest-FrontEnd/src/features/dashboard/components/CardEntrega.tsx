@@ -3,15 +3,17 @@ import { FaUser, FaCalendarAlt } from "react-icons/fa";
 import type { EntregaItem } from "../../../types/Dashboard";
 
 interface CardEntregaProps {
-  entregas: EntregaItem[];
-  className?: string; 
-  itensPorPagina?: number; 
+  entregas: (EntregaItem & { projetoId: string })[];
+  className?: string;
+  itensPorPagina?: number;
+  onTarefaClick: (projetoId: string) => void;
 }
 
 export function CardEntrega({
   entregas,
   className = "",
-  itensPorPagina = 2
+  itensPorPagina = 2,
+  onTarefaClick, 
 }: CardEntregaProps) {
   const [paginaAtual, setPaginaAtual] = useState(1);
   const totalPaginas = Math.ceil(entregas.length / itensPorPagina);
@@ -36,7 +38,8 @@ export function CardEntrega({
         {entregasPagina.map((entrega, index) => (
           <div
             key={index}
-            className="bg-[#F2E9E9] p-4 rounded-2xl flex-1 min-w-[350px] max-w-[calc(50%-8px)] flex flex-col gap-2 shadow-sm"
+            className="bg-pastel p-4 rounded-2xl flex-1 min-w-[350px] max-w-[calc(50%-8px)] flex flex-col gap-2 shadow-sm cursor-pointer hover:brightness-95 transition-all"
+            onClick={() => onTarefaClick(entrega.projetoId)}
           >
             <div className="font-medium text-gray-800">{entrega.titulo}</div>
             <div className="text-sm text-gray-600">{entrega.descricao}</div>
@@ -56,35 +59,37 @@ export function CardEntrega({
         ))}
       </div>
 
-<div className="flex justify-center gap-2 mt-4 text-sm text-gray-500">
-  <button
-    onClick={() => irParaPagina(paginaAtual - 1)}
-    disabled={paginaAtual === 1}
-    className="px-2 py-1 rounded hover:bg-gray-200 disabled:opacity-40"
-  >
-    ‹
-  </button>
+      {totalPaginas > 1 && (
+        <div className="flex justify-center gap-2 mt-4 text-sm text-gray-500">
+          <button
+            onClick={() => irParaPagina(paginaAtual - 1)}
+            disabled={paginaAtual === 1}
+            className="px-2 py-1 rounded hover:bg-gray-200 disabled:opacity-40"
+          >
+            ‹
+          </button>
 
-  {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((num) => (
-    <button
-      key={num}
-      onClick={() => irParaPagina(num)}
-      className={`px-2 py-1 rounded hover:bg-gray-200 ${
-        num === paginaAtual ? "font-semibold text-gray-800" : ""
-      }`}
-    >
-      {num}
-    </button>
-  ))}
+          {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((num) => (
+            <button
+              key={num}
+              onClick={() => irParaPagina(num)}
+              className={`px-2 py-1 rounded hover:bg-gray-200 ${
+                num === paginaAtual ? "font-semibold text-gray-800" : ""
+              }`}
+            >
+              {num}
+            </button>
+          ))}
 
-  <button
-    onClick={() => irParaPagina(paginaAtual + 1)}
-    disabled={paginaAtual === totalPaginas}
-    className="px-2 py-1 rounded hover:bg-gray-200 disabled:opacity-40"
-  >
-    ›
-  </button>
-</div>
+          <button
+            onClick={() => irParaPagina(paginaAtual + 1)}
+            disabled={paginaAtual === totalPaginas}
+            className="px-2 py-1 rounded hover:bg-gray-200 disabled:opacity-40"
+          >
+            ›
+          </button>
+        </div>
+      )}
     </div>
   );
 }

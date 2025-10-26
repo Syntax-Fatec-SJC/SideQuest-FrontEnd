@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { useToast } from "../../shared/hooks/useToast";
-import AdicionarUsuarios from "./components/ui/AdicionarUsuarios";
+// import AdicionarUsuarios from "./components/ui/AdicionarUsuarios"; Comentado temporariamente
 import { useUsuariosProjeto } from "./hooks/useUsuarios";
 import { validacoesProjeto } from "./utils/validacoes";
+// import { useAuth } from "../../shared/hooks/useAuth"; // Exemplo: importe seu hook de autenticação
 
 interface Props {
   isOpen: boolean;
@@ -10,19 +11,23 @@ interface Props {
   onCreate: (data: {
     nome: string;
     prazo: string;
+    status: string;
+    usuarioIdCriador: string;
     descricao?: string;
     usuarios?: string[];
   }) => void;
 }
 
 export default function CriarProjetoModal({ isOpen, onClose, onCreate }: Props) {
+  // const { usuario } = useAuth(); // Exemplo: obtenha o usuário logado
   const { show } = useToast();
   const {
     usuariosAdicionados,
-    emailDigitado,
-    setEmailDigitado,
-    handleAddUsuario,
-    handleRemoveUsuario,
+    // Comentado temporariamente
+    // emailDigitado,
+    // setEmailDigitado,
+    // handleAddUsuario,
+    // handleRemoveUsuario,
     resetUsuarios,
   } = useUsuariosProjeto(show);
   
@@ -49,13 +54,29 @@ export default function CriarProjetoModal({ isOpen, onClose, onCreate }: Props) 
       return;
     }
 
-    if (!validacoesProjeto.validarPrazo(prazo, show)) {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    const dataPrazo = new Date(prazo + 'T00:00:00');
+
+    if (dataPrazo < hoje) {
+      show({ tipo: 'erro', mensagem: 'O prazo não pode ser uma data anterior a hoje.' });
+      return; 
+    }
+
+    // const usuarioIdCriador = usuario?.id; // Exemplo
+    const usuarioIdCriador = "id-do-usuario-logado"; // Substitua pelo ID real do usuário
+
+    if (!usuarioIdCriador) {
+      show({ tipo: 'erro', mensagem: 'Usuário não autenticado. Faça login novamente.' });
       return;
     }
 
     onCreate({
       nome: nomeProjeto.trim(),
       prazo,
+      status: "A fazer", // Adiciona o status padrão
+      usuarioIdCriador, // Adiciona o ID do criador
       ...(descricao && { descricao }),
       ...(usuariosAdicionados.length > 0 && { usuarios: usuariosAdicionados.map((u) => u.email) }),
     });
@@ -78,7 +99,7 @@ export default function CriarProjetoModal({ isOpen, onClose, onCreate }: Props) 
   aria-modal="true"
   role="dialog"
 >
-  <div className="w-full max-w-lg sm:max-w-2xl md:max-w-4xl p-6 sm:p-8 bg-[#F2E9E9] rounded-xl shadow-lg animate-[fadeIn_.18s_ease-out] space-y-6">
+  <div className="w-full max-w-lg sm:max-w-2xl md:max-w-4xl p-6 sm:p-8 bg-white rounded-xl shadow-lg animate-[fadeIn_.18s_ease-out] space-y-6">
     
     {/* Nome do Projeto */}
     <div>
@@ -95,14 +116,15 @@ export default function CriarProjetoModal({ isOpen, onClose, onCreate }: Props) 
       />
     </div>
 
+    {/* Comentado temporariamente */}
     {/* Responsável / Usuários */}
-    <AdicionarUsuarios
+    {/* <AdicionarUsuarios
       usuariosAdicionados={usuariosAdicionados}
       emailDigitado={emailDigitado}
       setEmailDigitado={setEmailDigitado}
       onAddUsuario={handleAddUsuario}
       onRemoveUsuario={handleRemoveUsuario}
-    />
+    /> */}
 
     {/* Prazo */}
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -115,12 +137,7 @@ export default function CriarProjetoModal({ isOpen, onClose, onCreate }: Props) 
           className="w-full px-3 py-2 text-azul-escuro bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-azul-claro border-none"
           value={prazo}
           onChange={(e) => setPrazo(e.target.value)}
-          min={(() => {
-            const hoje = new Date();
-            hoje.setDate(hoje.getDate() + 1);
-            const local = new Date(hoje.getTime() - hoje.getTimezoneOffset() * 60000);
-            return local.toISOString().split("T")[0];
-          })()}
+          min={new Date().toISOString().split("T")[0]}
         />
       </div>
     </div>
