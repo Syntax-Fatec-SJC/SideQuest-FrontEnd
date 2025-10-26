@@ -3,6 +3,7 @@ import { useToast } from "../../shared/hooks/useToast";
 // import AdicionarUsuarios from "./components/ui/AdicionarUsuarios"; Comentado temporariamente
 import { useUsuariosProjeto } from "./hooks/useUsuarios";
 import { validacoesProjeto } from "./utils/validacoes";
+// import { useAuth } from "../../shared/hooks/useAuth"; // Exemplo: importe seu hook de autenticação
 
 interface Props {
   isOpen: boolean;
@@ -10,12 +11,15 @@ interface Props {
   onCreate: (data: {
     nome: string;
     prazo: string;
+    status: string;
+    usuarioIdCriador: string;
     descricao?: string;
     usuarios?: string[];
   }) => void;
 }
 
 export default function CriarProjetoModal({ isOpen, onClose, onCreate }: Props) {
+  // const { usuario } = useAuth(); // Exemplo: obtenha o usuário logado
   const { show } = useToast();
   const {
     usuariosAdicionados,
@@ -60,9 +64,19 @@ export default function CriarProjetoModal({ isOpen, onClose, onCreate }: Props) 
       return; 
     }
 
+    // const usuarioIdCriador = usuario?.id; // Exemplo
+    const usuarioIdCriador = "id-do-usuario-logado"; // Substitua pelo ID real do usuário
+
+    if (!usuarioIdCriador) {
+      show({ tipo: 'erro', mensagem: 'Usuário não autenticado. Faça login novamente.' });
+      return;
+    }
+
     onCreate({
       nome: nomeProjeto.trim(),
       prazo,
+      status: "A fazer", // Adiciona o status padrão
+      usuarioIdCriador, // Adiciona o ID do criador
       ...(descricao && { descricao }),
       ...(usuariosAdicionados.length > 0 && { usuarios: usuariosAdicionados.map((u) => u.email) }),
     });

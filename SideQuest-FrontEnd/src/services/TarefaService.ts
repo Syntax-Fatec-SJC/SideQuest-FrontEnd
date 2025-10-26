@@ -3,7 +3,15 @@ import type { Tarefa } from '../types/Tarefa';
 
 class TarefaService extends ApiBase {
   async listarTarefasDoProjeto(projetoId: string): Promise<Tarefa[]> {
-    return this.get<Tarefa[]>(`/listar/${projetoId}/tarefas`);
+    return this.get<Tarefa[]>(`/projetos/${projetoId}/tarefas`);
+  }
+
+  async listarMinhasTarefas(): Promise<Tarefa[]> {
+    return this.get<Tarefa[]>('/tarefas/minhas');
+  }
+
+  async listarProximasEntregas(): Promise<Tarefa[]> {
+    return this.get<Tarefa[]>('/tarefas/proximas-entregas');
   }
 
   async criarTarefa(dados: Tarefa): Promise<Tarefa> {

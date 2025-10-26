@@ -33,7 +33,7 @@ export function DashboardContainer() {
   const { usuario } = useAuth();
   const navigate = useNavigate();
   const { setProjetoSelecionadoId } = useProjeto();
-  const { entregas: entregasBackend, loading: loadingEntregas, erro: erroEntregas } = useProximasEntregas(usuario?.id || null);
+  const { entregas: entregasBackend, loading: loadingEntregas, erro: erroEntregas } = useProximasEntregas();
   const [membrosTodosProjetos, setMembrosTodosProjetos] = useState<Membro[]>([]);
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export function DashboardContainer() {
       if (!usuario?.id) return;
 
       try {
-        const projetos = await projetoService.listarProjetosDoUsuario(usuario.id);
+        const projetos = await projetoService.listarProjetosDoUsuario();
         const promessasMembros = projetos.map(p => membrosService.listarMembrosProjeto(p.id.toString()));
         const listasDeMembros = await Promise.all(promessasMembros);
         const membrosFlat = listasDeMembros.flat();

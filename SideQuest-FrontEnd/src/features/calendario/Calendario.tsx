@@ -35,7 +35,7 @@ export default function Calendario() {
         const buscarProjetos = async () => {
             try {
                 setErro(null);
-                const projetosData = await projetoService.listarProjetosDoUsuario(usuario.id.toString());
+                const projetosData = await projetoService.listarProjetosDoUsuario();
                 setProjetos(projetosData);
             } catch (error) {
                 console.error("Falha ao buscar projetos:", error);
