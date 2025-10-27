@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+  --color-azul-claro: #1565C0;
+  --color-azul-escuro: #334D6E;
+  --color-cinza-borda: #ccc;
+  --color-pastel: #F2E9E9;
+  --color-cinza-claro: #999999;
+  --color-cinza-medio: #454545;
+  --color-amarelo: #ffaf00;
+  --color-amarelo-escuro: #ff8c1a;
+}
+body {
+  background: linear-gradient(180deg, #194D88 0%, #3D8DC2 100%);
+  font-family: 'Poppins', sans-serif;
+}
