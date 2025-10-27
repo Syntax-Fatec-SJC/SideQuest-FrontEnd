@@ -1,66 +1,98 @@
-// src/services/ApiBase.ts
-const DEFAULT_BASE = 'http://localhost:8080';
+// src/services/ApiBase.ts - COMPLETO
 
 export class ApiBase {
-  protected baseUrl = import.meta.env.VITE_API_URL ?? DEFAULT_BASE;
-  protected token?: string;
+  protected baseURL = 'http://localhost:8080';
 
-  protected async makeRequest<T>(
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    url: string,
-    body?: unknown
-  ): Promise<T> {
-    const fullUrl = this.baseUrl + url;
+  protected getToken(): string {
+    return localStorage.getItem('token') || '';
+  }
 
-    const resp = await fetch(fullUrl, {
-      method,
+  protected async get<T>(endpoint: string): Promise<T> {
+    const response = await fetch(`${this.baseURL}${endpoint}`, {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...(this.token ? { Authorization: `Bearer ${this.token}` } : {})
-      },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-      credentials: 'include'
+        'Authorization': `Bearer ${this.getToken()}`
+      }
     });
 
-    // Trata erro primeiro
-    if (!resp.ok) {
-      const text = await resp.text().catch(() => '');
-      throw new Error(`Erro HTTP ${resp.status}: ${text}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    // Sem corpo: 204/205 ou Content-Length: 0
-    if (resp.status === 204 || resp.status === 205) {
-      return undefined as unknown as T;
-    }
-    const contentLength = resp.headers.get('content-length');
-    if (contentLength === '0') {
-      return undefined as unknown as T;
-    }
-
-    // Só parseia JSON se o content-type indicar JSON e houver texto
-    const contentType = resp.headers.get('content-type') ?? '';
-    if (!contentType.includes('application/json')) {
-      return undefined as unknown as T;
-    }
-
-    const text = await resp.text();
-    if (!text) {
-      return undefined as unknown as T;
-    }
-
-    return JSON.parse(text) as T;
+    return response.json();
   }
 
-  protected get<T>(url: string) {
-    return this.makeRequest<T>('GET', url);
+  protected async post<T>(endpoint: string, data?: any): Promise<T> {
+    const response = await fetch(`${this.baseURL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.getToken()}`
+      },
+      body: data ? JSON.stringify(data) : undefined
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
   }
-  protected post<T>(url: string, body?: unknown) {
-    return this.makeRequest<T>('POST', url, body);
+
+  protected async put<T>(endpoint: string, data?: any): Promise<T> {
+    const response = await fetch(`${this.baseURL}${endpoint}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.getToken()}`
+      },
+      body: data ? JSON.stringify(data) : undefined
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
   }
-  protected put<T>(url: string, body?: unknown) {
-    return this.makeRequest<T>('PUT', url, body);
+
+  protected async delete<T>(endpoint: string): Promise<T> {
+    const response = await fetch(`${this.baseURL}${endpoint}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.getToken()}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    // Se for 204 No Content, retorna vazio
+    if (response.status === 204) {
+      return {} as T;
+    }
+
+    return response.json();
   }
-  protected delete<T>(url: string) {
-    return this.makeRequest<T>('DELETE', url);
+
+  // MÉTODO PARA UPLOAD DE ARQUIVOS (FormData)
+  protected async uploadFormData<T>(endpoint: string, formData: FormData): Promise<T> {
+    const response = await fetch(`${this.baseURL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.getToken()}`
+        // NÃO adicione Content-Type - browser faz automaticamente
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
   }
 }
