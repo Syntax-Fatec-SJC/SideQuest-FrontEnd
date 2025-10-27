@@ -41,7 +41,7 @@ export function useAuth() {
       console.error('Erro ao fazer logout no servidor:', error);
       // Continua limpando o localStorage mesmo se houver erro
     }
-    
+
     // Limpar localStorage
     localStorage.removeItem('usuarioLogado');
     localStorage.removeItem('usuario');
@@ -54,7 +54,7 @@ export function useAuth() {
 
   useEffect(() => {
     const handler = (e: StorageEvent) => {
-      if (['usuarioLogado','usuario','usuarioSessao','usuarioId'].includes(e.key || '')) {
+      if (['usuarioLogado', 'usuario', 'usuarioSessao', 'usuarioId'].includes(e.key || '')) {
         refresh();
       }
     };

@@ -133,13 +133,27 @@ export default function Tarefas() {
         setEditarTarefa(null);
     }
 
+    // ✅ FUNÇÃO CORRIGIDA - AGORA REALMENTE EXCLUI A TAREFA
     async function handleDelete(tarefaId: string) {
-        if (projetoId) {
-            await carregarTarefas(projetoId);
+        try {
+            // Chama a API para excluir a tarefa
+            await axios.delete(`http://localhost:8080/excluir/tarefas/${tarefaId}`);
+
+            // Recarrega as tarefas após exclusão
+            if (projetoId) {
+                await carregarTarefas(projetoId);
+            }
+
+            console.log('✅ Tarefa excluída com sucesso!');
+        } catch (error: any) {
+            console.error('❌ Erro ao excluir tarefa:', error);
+            alert('Erro ao excluir tarefa: ' + (error.response?.data?.erro || error.message));
+        } finally {
+            // Fecha o modal e limpa os estados
+            setIsModalOpen(false);
+            setEditarTarefa(null);
+            setConfirmandoExclusaoId(null);
         }
-        setIsModalOpen(false);
-        setEditarTarefa(null);
-        setConfirmandoExclusaoId(null);
     }
 
     function iniciarExclusao(e: React.MouseEvent, tarefaId: string) {
@@ -236,7 +250,7 @@ export default function Tarefas() {
                                         ref={provided.innerRef}
                                         {...provided.droppableProps}
                                         className={`flex flex-col flex-1 bg-[#F2EEE9] rounded-xl shadow-2xl transition-colors overflow-y-auto max-h-[calc(94vh-10rem)] min-h-[calc(94vh-10rem)]
-                                            ${snapshot.isDraggingOver ? "bg-blue-100" : ""}`}
+                                             ${snapshot.isDraggingOver ? "bg-blue-100" : ""}`}
                                     >
                                         <h5 className={`flex justify-center mb-4 text-2xl font-mono sticky top-0 z-10 bg-[#F2EEE9] py-2 ${col.color}`}>
                                             {col.nome}

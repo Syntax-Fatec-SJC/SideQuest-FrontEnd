@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Sidebar from '../../shared/components/Sidebar';
-import { membrosService } from '../../services/MembrosService'; // Assumindo que este service foi corrigido
-import { usuarioService } from '../../services/AuthService';
+import { usuarioService } from '../../services/UsuarioService';
+import { membrosService } from '../../services/MembrosService';
 import type { LinhaEdicao, Toast, MembroProjeto, UsuarioResumo } from '../../types/Membro';
 
 export default function Membros() {
@@ -22,21 +22,19 @@ export default function Membros() {
 
     const listaRef = useRef<HTMLDivElement>(null);
 
-    // Efeito para calcular dinamicamente membros por página
+    // Ajuste automático de membros por página
     useEffect(() => {
         const calcularMembrosPorPagina = () => {
-            // Ajuste o cálculo para um valor que funcione bem com o seu layout
             const altura = window.innerHeight;
-            // Estima o número de itens que cabem, considerando a altura do container e do item
             const estimado = Math.floor((altura - 300) / 80);
-            setMembrosPorPagina(Math.max(3, estimado)); // Mínimo de 3 para telas muito pequenas
+            setMembrosPorPagina(Math.max(3, estimado));
         };
         calcularMembrosPorPagina();
         window.addEventListener('resize', calcularMembrosPorPagina);
         return () => window.removeEventListener('resize', calcularMembrosPorPagina);
     }, []);
 
-    // Função de carregamento dos dados
+    // Carrega membros e usuários
     const carregar = useCallback(async () => {
         if (!projetoSelecionadoId) {
             setLoadingLista(false);
@@ -46,7 +44,7 @@ export default function Membros() {
         try {
             const [membrosResp, usuariosResp] = await Promise.all([
                 membrosService.listarMembrosProjeto(projetoSelecionadoId),
-                usuarioService.listarUsuarios()
+                usuarioService.listarUsuarios() // ⚠️ Usa usuarioService correto
             ]);
             setMembros(Array.isArray(membrosResp) ? membrosResp : []);
             setUsuarios(Array.isArray(usuariosResp) ? usuariosResp : []);
@@ -58,12 +56,9 @@ export default function Membros() {
         }
     }, [projetoSelecionadoId]);
 
-    // Efeito para chamar a função de carregamento
-    useEffect(() => {
-        void carregar();
-    }, [carregar]);
+    useEffect(() => { void carregar(); }, [carregar]);
 
-    // Efeito para gerenciar o Toast (tempo de exibição)
+    // Toast automático
     useEffect(() => {
         if (toast) {
             const t = setTimeout(() => setToast(null), 2500);
@@ -89,7 +84,6 @@ export default function Membros() {
 
     const cancelarEdicao = () => setLinhaEdicao(null);
 
-    // 2️⃣ Corrigido: Lógica de salvarLinha para atualização local e scroll
     const salvarLinha = async () => {
         if (!projetoSelecionadoId || !linhaEdicao) return;
         if (!linhaEdicao.usuarioIdSelecionado) {
@@ -99,10 +93,8 @@ export default function Membros() {
 
         setLoadingAcao(true);
         try {
-            // Adiciona o membro no backend (Assumindo que membrosService.adicionarMembroProjeto foi corrigido)
             await membrosService.adicionarMembroProjeto(projetoSelecionadoId, linhaEdicao.usuarioIdSelecionado);
 
-            // Adiciona o membro diretamente na lista local (setMembros)
             const usuarioAdicionado = usuarios.find(u => u.id === linhaEdicao.usuarioIdSelecionado);
             if (usuarioAdicionado) {
                 setMembros(prev => [...prev, {
@@ -116,9 +108,7 @@ export default function Membros() {
             setToast({ tipo: 'sucesso', mensagem: 'Membro adicionado' });
             setLinhaEdicao(null);
 
-            // Scroll para o membro recém-adicionado
             setTimeout(() => {
-                // Rola para a base do elemento
                 listaRef.current?.scrollTo({ top: listaRef.current.scrollHeight, behavior: 'smooth' });
             }, 100);
         } catch (e: unknown) {
@@ -248,13 +238,10 @@ export default function Membros() {
                     </div>
                 )}
 
-                {/* 3️⃣ Corrigido: Container da lista com scroll vertical limitado */}
                 <div
                     ref={listaRef}
-                    // A classe original 'h-[calc(90vh-160px)]' é uma boa estimativa de altura fixa, 
-                    // mas vou simplificar um pouco o Tailwind para focar no overflow-y-auto
                     className="flex-1 overflow-y-auto pb-16"
-                    style={{ maxHeight: 'calc(100vh - 350px)' }} // Altura fixa para permitir o scroll
+                    style={{ maxHeight: 'calc(100vh - 350px)' }}
                 >
                     {loadingLista ? (
                         <div className="text-center text-gray-500">Carregando...</div>
@@ -312,7 +299,6 @@ export default function Membros() {
                     )}
                 </div>
 
-                {/* Paginação */}
                 {filtered.length > membrosPorPagina && (
                     <div className="flex justify-center items-center mt-4 gap-4">
                         <button
@@ -337,13 +323,11 @@ export default function Membros() {
 
                 {toast && (
                     <div
-                        className={`fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded shadow-lg text-white text-sm ${toast.mensagem === 'Membro removido'
-                            ? 'bg-red-600'
-                            : toast.tipo === 'erro'
-                                ? 'bg-orange-500'
-                                : toast.tipo === 'sucesso'
-                                    ? 'bg-green-600'
-                                    : 'bg-blue-600'
+                        className={`fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded shadow-lg text-white text-sm ${toast.tipo === 'erro'
+                            ? 'bg-orange-500'
+                            : toast.tipo === 'sucesso'
+                                ? 'bg-green-600'
+                                : 'bg-blue-600'
                             }`}
                     >
                         {toast.mensagem}

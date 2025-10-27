@@ -70,6 +70,21 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
 
     const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
+    // ✅ Verifica se é uma tarefa nova (sem initialData)
+    const isNovaTarefa = !initialData;
+    // Garante que o token exista no localStorage
+    useEffect(() => {
+        const tokenExistente = localStorage.getItem('token');
+
+        // se não tiver token, cria um token de teste ou pega de um contexto global
+        if (!tokenExistente) {
+            // 👉 Troque o valor abaixo pelo token real do seu backend, se quiser testar manualmente
+            const tokenFake = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fake-token-teste';
+            localStorage.setItem('token', tokenFake);
+            console.log('⚠️ Token de teste adicionado no localStorage:', tokenFake);
+        }
+    }, []);
+
     useEffect(() => {
         if (initialData) {
             setFormData(initialData);
@@ -101,7 +116,10 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
 
     async function carregarAnexosExistentes(tarefaId: string) {
         try {
-            const response = await axios.get(`http://localhost:8080/api/anexos/tarefa/${tarefaId}`);
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+            const response = await axios.get(`http://localhost:8080/api/anexos/tarefa/${tarefaId}`, { headers });
             setAnexosExistentes(response.data);
         } catch (error) {
             console.error('Erro ao carregar anexos existentes:', error);
@@ -128,7 +146,20 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
         if (showDeleteConfirm) {
             if (initialData && initialData.id) {
                 try {
-                    await axios.delete(`http://localhost:8080/excluir/tarefas/${initialData.id}`);
+                    // ✅ PEGA O TOKEN DO LOCALSTORAGE
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        alert('Erro: Você precisa estar autenticado!');
+                        return;
+                    }
+
+                    // ✅ ADICIONA O TOKEN NO HEADER
+                    await axios.delete(`http://localhost:8080/excluir/tarefas/${initialData.id}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
                     onDelete(initialData.id);
                     alert('Tarefa excluída com sucesso!');
                     onClose();
@@ -154,6 +185,13 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
         }
 
         try {
+            // ✅ PEGA O TOKEN DO LOCALSTORAGE
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Erro: Você precisa estar autenticado!');
+                return;
+            }
+
             const formDataToSend = new FormData();
 
             let prazoFinalDate = null;
@@ -185,12 +223,19 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
                 ? `http://localhost:8080/atualizar/tarefas/${initialData.id}`
                 : 'http://localhost:8080/cadastrar/tarefas';
 
+            // ✅ ADICIONA O TOKEN NO HEADER
             const response = initialData?.id
                 ? await axios.put(url, formDataToSend, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        'Authorization': `Bearer ${token}`
+                    }
                 })
                 : await axios.post(url, formDataToSend, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        'Authorization': `Bearer ${token}`
+                    }
                 });
 
             alert(initialData?.id ? 'Tarefa atualizada com sucesso!' : 'Tarefa criada com sucesso!');
@@ -283,7 +328,10 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
         if (!window.confirm('Deseja realmente excluir este anexo?')) return;
 
         try {
-            await axios.delete(`http://localhost:8080/api/anexos/${anexoId}`);
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+            await axios.delete(`http://localhost:8080/api/anexos/${anexoId}`, { headers });
             setAnexosExistentes(prev => prev.filter(a => a.id !== anexoId));
             alert('Anexo excluído com sucesso!');
         } catch (error) {
@@ -349,6 +397,15 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
                     <div className="bg-red-50 rounded-3xl p-8 m-2">
 
                         <header className="relative mb-8">
+                            {/* ✅ TAG "NOVO" ADICIONADA - Aparece apenas quando é uma tarefa nova */}
+                            {isNovaTarefa && (
+                                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-20">
+                                    <span className="px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full text-sm font-bold shadow-lg animate-pulse">
+                                        ✨ NOVO
+                                    </span>
+                                </div>
+                            )}
+
                             <input
                                 type="text"
                                 placeholder="Digite o nome da tarefa..."

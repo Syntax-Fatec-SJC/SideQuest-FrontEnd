@@ -1,12 +1,13 @@
-// src/services/ApiBase.ts - COMPLETO
-
+// src/services/ApiBase.ts
 export class ApiBase {
   protected baseURL = 'http://localhost:8080';
 
+  // Pega o token do localStorage
   protected getToken(): string {
     return localStorage.getItem('token') || '';
   }
 
+  // GET
   protected async get<T>(endpoint: string): Promise<T> {
     const response = await fetch(`${this.baseURL}${endpoint}`, {
       method: 'GET',
@@ -23,6 +24,7 @@ export class ApiBase {
     return response.json();
   }
 
+  // POST
   protected async post<T>(endpoint: string, data?: any): Promise<T> {
     const response = await fetch(`${this.baseURL}${endpoint}`, {
       method: 'POST',
@@ -40,6 +42,7 @@ export class ApiBase {
     return response.json();
   }
 
+  // PUT
   protected async put<T>(endpoint: string, data?: any): Promise<T> {
     const response = await fetch(`${this.baseURL}${endpoint}`, {
       method: 'PUT',
@@ -57,6 +60,7 @@ export class ApiBase {
     return response.json();
   }
 
+  // DELETE
   protected async delete<T>(endpoint: string): Promise<T> {
     const response = await fetch(`${this.baseURL}${endpoint}`, {
       method: 'DELETE',
@@ -78,13 +82,13 @@ export class ApiBase {
     return response.json();
   }
 
-  // MÉTODO PARA UPLOAD DE ARQUIVOS (FormData)
+  // Upload de arquivos via FormData
   protected async uploadFormData<T>(endpoint: string, formData: FormData): Promise<T> {
     const response = await fetch(`${this.baseURL}${endpoint}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.getToken()}`
-        // NÃO adicione Content-Type - browser faz automaticamente
+        // NÃO adicione Content-Type — o browser faz isso automaticamente
       },
       body: formData
     });
