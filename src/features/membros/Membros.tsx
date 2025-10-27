@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Sidebar from '../../shared/components/Sidebar';
-import { membrosService } from '../../services/MembrosService';
+import { membrosService } from '../../services/MembrosService'; // Assumindo que este service foi corrigido
 import { usuarioService } from '../../services/AuthService';
 import type { LinhaEdicao, Toast, MembroProjeto, UsuarioResumo } from '../../types/Membro';
 
@@ -20,17 +20,23 @@ export default function Membros() {
     const projetoSelecionadoId =
         typeof window !== 'undefined' ? localStorage.getItem('projetoSelecionadoId') : null;
 
+    const listaRef = useRef<HTMLDivElement>(null);
+
+    // Efeito para calcular dinamicamente membros por página
     useEffect(() => {
         const calcularMembrosPorPagina = () => {
+            // Ajuste o cálculo para um valor que funcione bem com o seu layout
             const altura = window.innerHeight;
+            // Estima o número de itens que cabem, considerando a altura do container e do item
             const estimado = Math.floor((altura - 300) / 80);
-            setMembrosPorPagina(Math.max(3, estimado));
+            setMembrosPorPagina(Math.max(3, estimado)); // Mínimo de 3 para telas muito pequenas
         };
         calcularMembrosPorPagina();
         window.addEventListener('resize', calcularMembrosPorPagina);
         return () => window.removeEventListener('resize', calcularMembrosPorPagina);
     }, []);
 
+    // Função de carregamento dos dados
     const carregar = useCallback(async () => {
         if (!projetoSelecionadoId) {
             setLoadingLista(false);
@@ -42,8 +48,8 @@ export default function Membros() {
                 membrosService.listarMembrosProjeto(projetoSelecionadoId),
                 usuarioService.listarUsuarios()
             ]);
-            setMembros(membrosResp);
-            setUsuarios(usuariosResp);
+            setMembros(Array.isArray(membrosResp) ? membrosResp : []);
+            setUsuarios(Array.isArray(usuariosResp) ? usuariosResp : []);
         } catch (e: unknown) {
             const mensagem = e instanceof Error ? e.message : String(e);
             setToast({ tipo: 'erro', mensagem: mensagem || 'Falha ao carregar' });
@@ -52,10 +58,12 @@ export default function Membros() {
         }
     }, [projetoSelecionadoId]);
 
+    // Efeito para chamar a função de carregamento
     useEffect(() => {
         void carregar();
     }, [carregar]);
 
+    // Efeito para gerenciar o Toast (tempo de exibição)
     useEffect(() => {
         if (toast) {
             const t = setTimeout(() => setToast(null), 2500);
@@ -81,25 +89,38 @@ export default function Membros() {
 
     const cancelarEdicao = () => setLinhaEdicao(null);
 
+    // 2️⃣ Corrigido: Lógica de salvarLinha para atualização local e scroll
     const salvarLinha = async () => {
         if (!projetoSelecionadoId || !linhaEdicao) return;
+        if (!linhaEdicao.usuarioIdSelecionado) {
+            setLinhaEdicao(prev => prev ? { ...prev, erro: 'Selecione um usuário existente' } : prev);
+            return;
+        }
+
         setLoadingAcao(true);
         try {
-            if (!linhaEdicao.usuarioIdSelecionado) {
-                setLinhaEdicao(prev =>
-                    prev ? { ...prev, erro: 'Selecione um usuário existente' } : prev
-                );
-                setLoadingAcao(false);
-                return;
+            // Adiciona o membro no backend (Assumindo que membrosService.adicionarMembroProjeto foi corrigido)
+            await membrosService.adicionarMembroProjeto(projetoSelecionadoId, linhaEdicao.usuarioIdSelecionado);
+
+            // Adiciona o membro diretamente na lista local (setMembros)
+            const usuarioAdicionado = usuarios.find(u => u.id === linhaEdicao.usuarioIdSelecionado);
+            if (usuarioAdicionado) {
+                setMembros(prev => [...prev, {
+                    usuarioId: usuarioAdicionado.id,
+                    nome: usuarioAdicionado.nome,
+                    email: usuarioAdicionado.email,
+                    criador: false
+                }]);
             }
-            await membrosService.adicionarMembroProjeto(
-                projetoSelecionadoId,
-                linhaEdicao.usuarioIdSelecionado
-            );
-            const atualizados = await membrosService.listarMembrosProjeto(projetoSelecionadoId);
-            setMembros(atualizados);
-            setLinhaEdicao(null);
+
             setToast({ tipo: 'sucesso', mensagem: 'Membro adicionado' });
+            setLinhaEdicao(null);
+
+            // Scroll para o membro recém-adicionado
+            setTimeout(() => {
+                // Rola para a base do elemento
+                listaRef.current?.scrollTo({ top: listaRef.current.scrollHeight, behavior: 'smooth' });
+            }, 100);
         } catch (e: unknown) {
             const mensagem = e instanceof Error ? e.message : String(e);
             setToast({ tipo: 'erro', mensagem: mensagem || 'Erro ao adicionar' });
@@ -113,8 +134,7 @@ export default function Membros() {
         setLoadingAcao(true);
         try {
             await membrosService.removerMembroProjeto(projetoSelecionadoId, usuarioId);
-            const atualizados = await membrosService.listarMembrosProjeto(projetoSelecionadoId);
-            setMembros(atualizados);
+            setMembros(prev => prev.filter(m => m.usuarioId !== usuarioId));
             setToast({ tipo: 'info', mensagem: 'Membro removido' });
         } catch (e: unknown) {
             const mensagem = e instanceof Error ? e.message : String(e);
@@ -167,7 +187,6 @@ export default function Membros() {
                     </button>
                 </div>
 
-                {/* Linha de adição */}
                 {linhaEdicao && (
                     <div className="bg-[#F5F5F5] rounded-lg shadow p-4 mb-4 flex flex-col gap-2 relative">
                         <div className="relative w-full">
@@ -175,19 +194,10 @@ export default function Membros() {
                                 type="text"
                                 placeholder="Pesquisar usuário..."
                                 className="w-full p-2 border border-gray-300 rounded-md bg-white text-gray-700 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
-                                value={linhaEdicao?.nome || ''}
+                                value={linhaEdicao.nome || ''}
                                 onChange={e => {
                                     const valor = e.target.value;
-                                    setLinhaEdicao(prev =>
-                                        prev
-                                            ? {
-                                                ...prev,
-                                                nome: valor,
-                                                usuarioIdSelecionado: undefined,
-                                                erro: undefined
-                                            }
-                                            : prev
-                                    );
+                                    setLinhaEdicao(prev => prev ? { ...prev, nome: valor, usuarioIdSelecionado: undefined, erro: undefined } : prev);
                                     setListaAberta(true);
                                 }}
                                 onFocus={() => setListaAberta(true)}
@@ -196,35 +206,16 @@ export default function Membros() {
                             {listaAberta && usuariosDisponiveis.length > 0 && (
                                 <ul className="absolute top-full left-0 z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
                                     {usuariosDisponiveis
-                                        .filter(
-                                            u =>
-                                                u.nome
-                                                    .toLowerCase()
-                                                    .includes(
-                                                        (linhaEdicao.nome || '').toLowerCase()
-                                                    ) ||
-                                                u.email
-                                                    .toLowerCase()
-                                                    .includes(
-                                                        (linhaEdicao.nome || '').toLowerCase()
-                                                    )
+                                        .filter(u =>
+                                            u.nome.toLowerCase().includes((linhaEdicao.nome || '').toLowerCase()) ||
+                                            u.email.toLowerCase().includes((linhaEdicao.nome || '').toLowerCase())
                                         )
                                         .map(u => (
                                             <li
                                                 key={u.id}
                                                 className="p-2 hover:bg-blue-100 cursor-pointer"
                                                 onClick={() => {
-                                                    setLinhaEdicao(prev =>
-                                                        prev
-                                                            ? {
-                                                                ...prev,
-                                                                usuarioIdSelecionado: u.id,
-                                                                nome: u.nome,
-                                                                email: u.email,
-                                                                erro: undefined
-                                                            }
-                                                            : prev
-                                                    );
+                                                    setLinhaEdicao(prev => prev ? { ...prev, usuarioIdSelecionado: u.id, nome: u.nome, email: u.email, erro: undefined } : prev);
                                                     setListaAberta(false);
                                                 }}
                                             >
@@ -257,107 +248,93 @@ export default function Membros() {
                     </div>
                 )}
 
-                {/* Lista de membros */}
-                <div className="flex-1 h-[calc(90vh-160px)] overflow-auto pb-16 sm:h-auto sm:overflow-visible sm:pb-0">
-
+                {/* 3️⃣ Corrigido: Container da lista com scroll vertical limitado */}
+                <div
+                    ref={listaRef}
+                    // A classe original 'h-[calc(90vh-160px)]' é uma boa estimativa de altura fixa, 
+                    // mas vou simplificar um pouco o Tailwind para focar no overflow-y-auto
+                    className="flex-1 overflow-y-auto pb-16"
+                    style={{ maxHeight: 'calc(100vh - 350px)' }} // Altura fixa para permitir o scroll
+                >
                     {loadingLista ? (
                         <div className="text-center text-gray-500">Carregando...</div>
                     ) : filtered.length === 0 ? (
                         <div className="text-center text-gray-500">Nenhum membro.</div>
                     ) : (
-                        <>
-                            <div className="space-y-2">
-                                {membrosPagina.map(m => (
-                                    <div
-                                        key={m.usuarioId}
-                                        className="bg-[#F5F5F5] rounded-lg shadow p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2"
-                                    >
-                                        <div className="flex flex-col">
-                                            <span className="font-semibold flex items-center gap-2">
-                                                {m.nome}
-                                                {m.criador && (
-                                                    <span className="text-xs bg-indigo-600 text-white px-2 py-2px rounded-full">
-                                                        Criador
-                                                    </span>
-                                                )}
-                                            </span>
-                                            <span className="text-sm text-gray-600">{m.email}</span>
-                                        </div>
-                                        {!m.criador && (
-                                            confirmandoRemocaoId === m.usuarioId ? (
-                                                <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-                                                    <button
-                                                        disabled={loadingAcao}
-                                                        onClick={() => remover(m.usuarioId)}
-                                                        className="w-full sm:w-auto px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm disabled:opacity-50 transition-colors"
-                                                    >
-                                                        Excluir
-                                                    </button>
-                                                    <button
-                                                        disabled={loadingAcao}
-                                                        onClick={() => setConfirmandoRemocaoId(null)}
-                                                        className="w-full sm:w-auto px-3 py-2 bg-gray-300 rounded-md hover:bg-gray-400 text-sm disabled:opacity-50 transition-colors"
-                                                    >
-                                                        Cancelar
-                                                    </button>
-                                                </div>
-
-                                            ) : (
+                        <div className="space-y-2">
+                            {membrosPagina.map(m => (
+                                <div
+                                    key={m.usuarioId}
+                                    className="bg-[#F5F5F5] rounded-lg shadow p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2"
+                                >
+                                    <div className="flex flex-col">
+                                        <span className="font-semibold flex items-center gap-2">
+                                            {m.nome}
+                                            {m.criador && (
+                                                <span className="text-xs bg-indigo-600 text-white px-2 py-2px rounded-full">
+                                                    Criador
+                                                </span>
+                                            )}
+                                        </span>
+                                        <span className="text-sm text-gray-600">{m.email}</span>
+                                    </div>
+                                    {!m.criador && (
+                                        confirmandoRemocaoId === m.usuarioId ? (
+                                            <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
                                                 <button
                                                     disabled={loadingAcao}
-                                                    onClick={() => setConfirmandoRemocaoId(m.usuarioId)}
-                                                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm disabled:opacity-50"
+                                                    onClick={() => remover(m.usuarioId)}
+                                                    className="w-full sm:w-auto px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm disabled:opacity-50 transition-colors"
                                                 >
                                                     Excluir
                                                 </button>
-                                            )
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Paginação */}
-                            {totalPaginas > 1 && (
-                                <div className="flex justify-center mt-4 gap-2">
-                                    <button
-                                        onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))}
-                                        disabled={paginaAtual === 1}
-                                        className="px-3 py-1 rounded-md text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 transition-colors"
-                                    >
-                                        ‹
-                                    </button>
-
-                                    {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(num => (
-                                        <button
-                                            key={num}
-                                            onClick={() => setPaginaAtual(num)}
-                                            className={`px-3 py-1 rounded-md transition-colors ${paginaAtual === num
-                                                ? 'bg-blue-600 text-white'
-                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                }`}
-                                        >
-                                            {num}
-                                        </button>
-                                    ))}
-
-                                    <button
-                                        onClick={() =>
-                                            setPaginaAtual(prev =>
-                                                Math.min(prev + 1, totalPaginas)
-                                            )
-                                        }
-                                        disabled={paginaAtual === totalPaginas}
-                                        className="px-3 py-1 rounded-md text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 transition-colors"
-                                    >
-                                        ›
-                                    </button>
+                                                <button
+                                                    disabled={loadingAcao}
+                                                    onClick={() => setConfirmandoRemocaoId(null)}
+                                                    className="w-full sm:w-auto px-3 py-2 bg-gray-300 rounded-md hover:bg-gray-400 text-sm disabled:opacity-50 transition-colors"
+                                                >
+                                                    Cancelar
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                disabled={loadingAcao}
+                                                onClick={() => setConfirmandoRemocaoId(m.usuarioId)}
+                                                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm disabled:opacity-50"
+                                            >
+                                                Excluir
+                                            </button>
+                                        )
+                                    )}
                                 </div>
-                            )}
-                        </>
+                            ))}
+                        </div>
                     )}
                 </div>
 
-                {/* Toast */}
+                {/* Paginação */}
+                {filtered.length > membrosPorPagina && (
+                    <div className="flex justify-center items-center mt-4 gap-4">
+                        <button
+                            onClick={() => setPaginaAtual(prev => Math.max(1, prev - 1))}
+                            disabled={paginaAtual === 1}
+                            className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                        >
+                            Anterior
+                        </button>
+                        <span className="text-sm text-gray-600">
+                            Página {paginaAtual} de {totalPaginas}
+                        </span>
+                        <button
+                            onClick={() => setPaginaAtual(prev => Math.min(totalPaginas, prev + 1))}
+                            disabled={paginaAtual === totalPaginas}
+                            className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                        >
+                            Próxima
+                        </button>
+                    </div>
+                )}
+
                 {toast && (
                     <div
                         className={`fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded shadow-lg text-white text-sm ${toast.mensagem === 'Membro removido'

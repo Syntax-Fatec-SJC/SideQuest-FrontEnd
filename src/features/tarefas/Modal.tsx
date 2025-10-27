@@ -1,20 +1,13 @@
 import { useEffect, useState, useRef, type ChangeEvent } from 'react';
-import { anexoService, type AnexoBackend } from '../../services/AnexoService';
+import axios from 'axios';
 
 interface ModalTarefaProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (data: {
-        name: string;
-        description: string;
-        responsible: string[];
-        endDate: string;
-        status: "Pendente" | "Desenvolvimento" | "Concluído";
-        comment: string;
-        files: File[];
-    }) => void;
+    onSave?: (tarefa: any) => void;
     onDelete: (tarefaId: string) => void;
     membrosProjeto?: { id: string; nome: string; email: string }[];
+    projetoId: string;
     initialData?: {
         id: string;
         name: string;
@@ -41,12 +34,18 @@ interface FileWithPreview {
     type: 'image' | 'pdf' | 'video';
 }
 
+interface AnexoExistente {
+    id: string;
+    nomeOriginal: string;
+    contentType: string;
+    tamanho: number;
+    urlDownload: string;
+}
+
 type FormField = keyof FormData;
 type StatusType = FormData['status'];
 
-const API_BASE_URL = 'http://localhost:8080';
-
-export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initialData, membrosProjeto = [] }: ModalTarefaProps) {
+export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initialData, membrosProjeto = [], projetoId }: ModalTarefaProps) {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
     const [mostrarListaResponsaveis, setMostrarListaResponsaveis] = useState<boolean>(false);
     const [formData, setFormData] = useState<FormData>({
@@ -59,54 +58,38 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
     });
 
     const [anexos, setAnexos] = useState<FileWithPreview[]>([]);
-    const [anexosExistentes, setAnexosExistentes] = useState<AnexoBackend[]>([]);
+    const [anexosExistentes, setAnexosExistentes] = useState<AnexoExistente[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const ALLOWED_TYPES = {
+        'image/png': '.png',
+        'image/jpeg': '.jpeg,.jpg',
+        'application/pdf': '.pdf',
+        'video/mp4': '.mp4'
+    };
 
     const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
-    // Resetar e carregar dados quando o Modal abrir
     useEffect(() => {
-        if (isOpen) {
-            if (initialData) {
-                console.log('✓ Modal: Carregando tarefa existente', initialData);
-                setFormData({
-                    name: initialData.name,
-                    description: initialData.description,
-                    responsible: initialData.responsible,
-                    endDate: initialData.endDate,
-                    status: initialData.status,
-                    comment: initialData.comment
-                });
+        if (initialData) {
+            setFormData(initialData);
+            if (initialData.id) {
                 carregarAnexosExistentes(initialData.id);
-            } else {
-                console.log('✓ Modal: Criando nova tarefa');
-                setFormData({
-                    name: "",
-                    description: "",
-                    responsible: [],
-                    endDate: "",
-                    status: "Pendente",
-                    comment: "",
-                });
-                setAnexosExistentes([]);
             }
-            setShowDeleteConfirm(false);
-            setAnexos([]);
-            setMostrarListaResponsaveis(false);
-        }
-    }, [initialData, isOpen]);
-
-    const carregarAnexosExistentes = async (tarefaId: string) => {
-        try {
-            console.log('Modal: Buscando anexos da tarefa', tarefaId);
-            const data = await anexoService.listarPorTarefa(tarefaId);
-            setAnexosExistentes(data);
-            console.log('✓ Modal: Anexos carregados:', data.length, 'arquivos');
-        } catch (error) {
-            console.error('✗ Modal: Erro ao carregar anexos:', error);
+        } else {
+            setFormData({
+                name: "",
+                description: "",
+                responsible: [],
+                endDate: "",
+                status: "Pendente",
+                comment: "",
+            });
             setAnexosExistentes([]);
         }
-    };
+        setShowDeleteConfirm(false);
+        setAnexos([]);
+    }, [initialData, isOpen]);
 
     useEffect(() => {
         return () => {
@@ -115,6 +98,15 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
             });
         };
     }, [anexos]);
+
+    async function carregarAnexosExistentes(tarefaId: string) {
+        try {
+            const response = await axios.get(`http://localhost:8080/api/anexos/tarefa/${tarefaId}`);
+            setAnexosExistentes(response.data);
+        } catch (error) {
+            console.error('Erro ao carregar anexos existentes:', error);
+        }
+    }
 
     const handleInputChange = (field: FormField, value: string | string[] | StatusType): void => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -132,32 +124,110 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
         });
     };
 
-    const handleDelete = (): void => {
+    const handleDelete = async (): Promise<void> => {
         if (showDeleteConfirm) {
             if (initialData && initialData.id) {
-                console.log('Modal: Deletando tarefa', initialData.id);
-                onDelete(initialData.id);
+                try {
+                    await axios.delete(`http://localhost:8080/excluir/tarefas/${initialData.id}`);
+                    onDelete(initialData.id);
+                    alert('Tarefa excluída com sucesso!');
+                    onClose();
+                } catch (error: any) {
+                    console.error('Erro ao excluir tarefa:', error);
+                    alert('Erro ao excluir tarefa: ' + (error.response?.data?.erro || error.message));
+                }
             }
         } else {
             setShowDeleteConfirm(true);
         }
     };
 
-    const handleSave = (): void => {
-        console.log('Modal: Salvando tarefa com dados:', formData);
-        console.log('Modal: Responsáveis selecionados:', formData.responsible);
-        console.log('Modal: Anexos novos:', anexos.length);
+    const handleSave = async (): Promise<void> => {
+        if (!projetoId) {
+            alert('ERRO: projetoId não foi fornecido!');
+            return;
+        }
 
-        const files = anexos.map(anexo => anexo.file);
-        onSave({ ...formData, files });
+        if (!formData.name || formData.name.trim() === '') {
+            alert('Por favor, preencha o nome da tarefa!');
+            return;
+        }
+
+        try {
+            const formDataToSend = new FormData();
+
+            let prazoFinalDate = null;
+            if (formData.endDate && formData.endDate.trim() !== '') {
+                prazoFinalDate = new Date(formData.endDate).toISOString();
+            }
+
+            const tarefaJson = {
+                nome: formData.name,
+                descricao: formData.description || "",
+                usuarioIds: formData.responsible || [],
+                prazoFinal: prazoFinalDate,
+                status: formData.status,
+                comentario: formData.comment || "",
+                projetoId: projetoId
+            };
+
+            formDataToSend.append('tarefa', new Blob([JSON.stringify(tarefaJson)], {
+                type: 'application/json'
+            }));
+
+            if (anexos.length > 0) {
+                anexos.forEach((anexo) => {
+                    formDataToSend.append('files', anexo.file);
+                });
+            }
+
+            const url = initialData?.id
+                ? `http://localhost:8080/atualizar/tarefas/${initialData.id}`
+                : 'http://localhost:8080/cadastrar/tarefas';
+
+            const response = initialData?.id
+                ? await axios.put(url, formDataToSend, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                })
+                : await axios.post(url, formDataToSend, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+
+            alert(initialData?.id ? 'Tarefa atualizada com sucesso!' : 'Tarefa criada com sucesso!');
+
+            if (onSave) {
+                onSave(response.data);
+            }
+
+            onClose();
+
+        } catch (error: any) {
+            console.error('Erro ao salvar tarefa:', error);
+
+            let errorMessage = 'Erro ao salvar tarefa.';
+
+            if (error.response?.data) {
+                if (typeof error.response.data === 'string') {
+                    errorMessage = error.response.data;
+                } else if (error.response.data.erro) {
+                    errorMessage = error.response.data.erro;
+                } else if (error.response.data.message) {
+                    errorMessage = error.response.data.message;
+                }
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            alert('Erro: ' + errorMessage);
+        }
     };
 
     const handleCommentChange = (e: ChangeEvent<HTMLTextAreaElement>): void => {
         handleInputChange('comment', e.target.value);
     };
 
-    const handleDateChange = (e: ChangeEvent<HTMLInputElement>): void => {
-        handleInputChange('endDate', e.target.value);
+    const handleDateChange = (field: 'endDate') => (e: ChangeEvent<HTMLInputElement>): void => {
+        handleInputChange(field, e.target.value);
     };
 
     const handleStatusChange = (e: ChangeEvent<HTMLSelectElement>): void => {
@@ -177,53 +247,48 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
 
-            if (file.size > MAX_FILE_SIZE) {
-                alert(`Arquivo "${file.name}" excede o tamanho máximo de 50MB`);
+            if (!Object.keys(ALLOWED_TYPES).includes(file.type)) {
+                alert(`Arquivo "${file.name}" não é permitido. Use apenas PNG, JPEG, PDF ou MP4.`);
                 continue;
             }
 
-            let preview = '';
-            let type: 'image' | 'pdf' | 'video' = 'image';
-
-            if (file.type.startsWith('image/')) {
-                preview = URL.createObjectURL(file);
-                type = 'image';
-            } else if (file.type === 'application/pdf') {
-                type = 'pdf';
-                preview = URL.createObjectURL(file);
-            } else if (file.type.startsWith('video/')) {
-                preview = URL.createObjectURL(file);
-                type = 'video';
+            if (file.size > MAX_FILE_SIZE) {
+                alert(`Arquivo "${file.name}" é muito grande. Tamanho máximo: 50MB.`);
+                continue;
             }
 
-            novosAnexos.push({ file, preview, type });
+            let fileType: 'image' | 'pdf' | 'video';
+            if (file.type.startsWith('image/')) fileType = 'image';
+            else if (file.type === 'application/pdf') fileType = 'pdf';
+            else fileType = 'video';
+
+            const preview = (fileType === 'image' || fileType === 'video') ? URL.createObjectURL(file) : '';
+
+            novosAnexos.push({ file, preview, type: fileType });
         }
 
         setAnexos(prev => [...prev, ...novosAnexos]);
-
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     const handleRemoverAnexo = (index: number): void => {
-        const anexo = anexos[index];
-        if (anexo.preview.startsWith('blob:')) {
-            URL.revokeObjectURL(anexo.preview);
-        }
-        setAnexos(prev => prev.filter((_, i) => i !== index));
+        setAnexos(prev => {
+            const anexo = prev[index];
+            if (anexo.preview.startsWith('blob:')) URL.revokeObjectURL(anexo.preview);
+            return prev.filter((_, i) => i !== index);
+        });
     };
 
     const handleRemoverAnexoExistente = async (anexoId: string): Promise<void> => {
-        if (!confirm('Deseja realmente excluir este arquivo do MongoDB?')) return;
+        if (!window.confirm('Deseja realmente excluir este anexo?')) return;
 
         try {
-            await anexoService.deletar(anexoId);
+            await axios.delete(`http://localhost:8080/api/anexos/${anexoId}`);
             setAnexosExistentes(prev => prev.filter(a => a.id !== anexoId));
-            console.log('✓ Modal: Anexo deletado do MongoDB:', anexoId);
+            alert('Anexo excluído com sucesso!');
         } catch (error) {
-            console.error('✗ Modal: Erro ao deletar anexo:', error);
-            alert('Erro ao excluir arquivo. Tente novamente.');
+            console.error('Erro ao excluir anexo:', error);
+            alert('Erro ao excluir anexo.');
         }
     };
 
@@ -244,15 +309,33 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
         }
     };
 
-    const handleVisualizarAnexoExistente = (anexo: AnexoBackend): void => {
-        window.open(`${API_BASE_URL}${anexo.urlDownload}`, '_blank');
+    const handleVisualizarAnexoExistente = (anexo: AnexoExistente): void => {
+        window.open(`http://localhost:8080${anexo.urlDownload}`, '_blank');
     };
 
-    const getTipoAnexoExistente = (contentType: string): 'image' | 'pdf' | 'video' => {
-        if (contentType.startsWith('image/')) return 'image';
-        if (contentType === 'application/pdf') return 'pdf';
-        if (contentType.startsWith('video/')) return 'video';
-        return 'pdf';
+    const getFileIcon = (contentType: string) => {
+        if (contentType.startsWith('image/')) {
+            return (
+                <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                </svg>
+            );
+        }
+        if (contentType === 'application/pdf') {
+            return (
+                <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                </svg>
+            );
+        }
+        if (contentType.startsWith('video/')) {
+            return (
+                <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                </svg>
+            );
+        }
+        return null;
     };
 
     const membrosOrdenados = [...membrosProjeto].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
@@ -276,7 +359,7 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
                             <div className="w-80 h-px bg-slate-600 mx-auto mt-4"></div>
                             <button
                                 onClick={onClose}
-                                className="absolute -top-4 -right-4 w-16 h-16 rounded-full hover:scale-110 transition-transform"
+                                className="absolute -top-4 -right-4 w-16 h-16 rounded-full"
                             >
                                 <img
                                     src="https://codia-f2c.s3.us-west-1.amazonaws.com/image/2025-09-15/NaTQuP3JqU.png"
@@ -287,9 +370,7 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
                         </header>
 
                         <main className="space-y-6">
-
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
                                 <section className="bg-white rounded-3xl p-6">
                                     <div className="flex items-center justify-between mb-4">
                                         <div className="flex items-center gap-3">
@@ -303,44 +384,40 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
                                         <button
                                             type="button"
                                             onClick={() => setMostrarListaResponsaveis(v => !v)}
-                                            className="text-xs text-blue-600 hover:underline font-semibold"
+                                            className="text-xs text-blue-600 hover:underline"
                                         >
                                             {mostrarListaResponsaveis ? 'ocultar' : 'selecionar'}
                                         </button>
                                     </div>
-
-                                    {/* BADGES DOS RESPONSÁVEIS SELECIONADOS */}
                                     {formData.responsible.length > 0 && (
                                         <div className="flex flex-wrap gap-2 mb-3">
                                             {formData.responsible.map(r => {
                                                 const m = membrosProjeto.find(m => m.id === r);
                                                 return (
-                                                    <span key={r} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+                                                    <span key={r} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
                                                         {m?.nome || r}
                                                     </span>
                                                 );
                                             })}
                                         </div>
                                     )}
-
-                                    {/* LISTA DE MEMBROS COM CHECKBOXES */}
                                     {mostrarListaResponsaveis && (
-                                        <div className="max-h-40 overflow-auto pr-1 space-y-1 border rounded p-3 bg-gray-50">
+                                        <div className="max-h-40 overflow-auto pr-1 space-y-1 border rounded p-2 bg-gray-50">
                                             {membrosOrdenados.length === 0 && (
-                                                <p className="text-xs text-gray-400 italic">Nenhum membro disponível. Cadastre na página Membros.</p>
+                                                <p className="text-xs text-gray-400">Nenhum membro disponível</p>
                                             )}
                                             {membrosOrdenados.map(m => {
                                                 const checked = formData.responsible.includes(m.id);
                                                 return (
-                                                    <label key={m.id} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-blue-50 p-2 rounded transition">
+                                                    <label key={m.id} className="flex items-center gap-2 text-xs cursor-pointer">
                                                         <input
                                                             type="checkbox"
                                                             checked={checked}
                                                             onChange={() => toggleResponsavel(m.id)}
-                                                            className="accent-blue-600 w-4 h-4"
+                                                            className="accent-blue-600"
                                                         />
                                                         <span className="text-gray-700 font-medium">{m.nome}</span>
-                                                        <span className="text-gray-400 text-xs">({m.email})</span>
+                                                        <span className="text-gray-400">{m.email}</span>
                                                     </label>
                                                 );
                                             })}
@@ -368,7 +445,6 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
                                 <section className="bg-white rounded-3xl p-6">
                                     <div className="flex items-center gap-3 mb-4">
                                         <img
@@ -382,7 +458,7 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
                                         <input
                                             type="date"
                                             value={formData.endDate}
-                                            onChange={handleDateChange}
+                                            onChange={handleDateChange('endDate')}
                                             className="w-full text-sm font-bold text-black text-opacity-50 outline-none"
                                         />
                                     </div>
@@ -401,7 +477,7 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
                                         <select
                                             value={formData.status}
                                             onChange={handleStatusChange}
-                                            className="text-sm font-bold text-black text-opacity-50 outline-none bg-transparent text-center"
+                                            className="text-sm font-bold text-black text-opacity-50 outline-none bg-transparent text-center relative z-10"
                                         >
                                             <option value="Pendente">Pendente</option>
                                             <option value="Desenvolvimento">Desenvolvimento</option>
@@ -422,15 +498,15 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
 
                                     <button
                                         onClick={handleClickAnexar}
-                                        className="flex justify-center items-center h-full cursor-pointer hover:bg-blue-50 hover:scale-105 hover:shadow-xl transition-all duration-300 rounded-2xl border-2 border-transparent hover:border-blue-300"
-                                        title="Clique para anexar arquivos"
+                                        type="button"
+                                        className="flex justify-center items-center h-full cursor-pointer hover:bg-gray-50 hover:scale-105 transition-all duration-200 rounded-2xl"
                                     >
                                         <img
                                             src="https://codia-f2c.s3.us-west-1.amazonaws.com/image/2025-09-15/fnh8pRWwYV.png"
                                             alt="Upload"
-                                            className="w-11 h-11 mr-4 transition-transform duration-300 hover:rotate-12"
+                                            className="w-11 h-11 mr-4"
                                         />
-                                        <span className="text-xl text-black text-opacity-50 font-poppins transition-colors duration-300 hover:text-blue-600">
+                                        <span className="text-xl text-black text-opacity-50 font-poppins">
                                             Anexar um arquivo
                                         </span>
                                     </button>
@@ -445,81 +521,54 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
                                         className="w-10 h-10"
                                     />
                                     <h2 className="text-2xl text-black text-opacity-50 font-poppins">Arquivos</h2>
-                                    {(anexosExistentes.length + anexos.length) > 0 && (
-                                        <span className="ml-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold animate-pulse">
-                                            {anexosExistentes.length + anexos.length}
+                                    {(anexos.length + anexosExistentes.length) > 0 && (
+                                        <span className="ml-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
+                                            {anexos.length + anexosExistentes.length}
                                         </span>
                                     )}
                                 </div>
 
-                                {anexosExistentes.length === 0 && anexos.length === 0 ? (
+                                {anexos.length === 0 && anexosExistentes.length === 0 ? (
                                     <div className="h-32 flex items-center justify-center text-gray-400">
                                         <span>Nenhum arquivo anexado</span>
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                        {anexosExistentes.map((anexo) => {
-                                            const tipo = getTipoAnexoExistente(anexo.contentType);
-                                            return (
-                                                <div key={anexo.id} className="relative group">
-                                                    <div
-                                                        onClick={() => handleVisualizarAnexoExistente(anexo)}
-                                                        className="aspect-square bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center cursor-pointer hover:bg-gray-200 hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                                                        title="Clique para visualizar"
-                                                    >
-                                                        {tipo === 'image' && (
-                                                            <img
-                                                                src={`${API_BASE_URL}${anexo.urlDownload}`}
-                                                                alt={anexo.nomeOriginal}
-                                                                className="w-full h-full object-cover"
-                                                            />
-                                                        )}
-                                                        {tipo === 'pdf' && (
-                                                            <div className="flex flex-col items-center justify-center text-red-500">
-                                                                <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
-                                                                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                                                                </svg>
-                                                                <span className="text-xs mt-1 font-semibold">PDF</span>
-                                                            </div>
-                                                        )}
-                                                        {tipo === 'video' && (
-                                                            <div className="flex flex-col items-center justify-center text-purple-500">
-                                                                <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
-                                                                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-                                                                </svg>
-                                                                <span className="text-xs mt-1 font-semibold">MP4</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    <button
-                                                        onClick={() => handleRemoverAnexoExistente(anexo.id)}
-                                                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-red-600"
-                                                        title="Remover arquivo do MongoDB"
-                                                    >
-                                                        ×
-                                                    </button>
-
-                                                    <div className="mt-2">
-                                                        <p className="text-xs text-gray-700 truncate font-medium" title={anexo.nomeOriginal}>
-                                                            {anexo.nomeOriginal}
-                                                        </p>
-                                                        <p className="text-xs text-gray-400">
-                                                            {formatFileSize(anexo.tamanho)}
-                                                        </p>
-                                                    </div>
+                                        {anexosExistentes.map((anexo) => (
+                                            <div key={anexo.id} className="relative group">
+                                                <div
+                                                    onClick={() => handleVisualizarAnexoExistente(anexo)}
+                                                    className="aspect-square bg-gray-100 rounded-lg overflow-hidden flex flex-col items-center justify-center cursor-pointer hover:bg-gray-200 hover:shadow-lg transition-all duration-200 text-blue-600"
+                                                    title="Clique para visualizar"
+                                                >
+                                                    {getFileIcon(anexo.contentType)}
                                                 </div>
-                                            );
-                                        })}
+
+                                                <button
+                                                    onClick={() => handleRemoverAnexoExistente(anexo.id)}
+                                                    type="button"
+                                                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-red-600"
+                                                    title="Remover arquivo"
+                                                >
+                                                    ×
+                                                </button>
+
+                                                <div className="mt-2">
+                                                    <p className="text-xs text-gray-700 truncate font-medium" title={anexo.nomeOriginal}>
+                                                        {anexo.nomeOriginal}
+                                                    </p>
+                                                    <p className="text-xs text-gray-400">
+                                                        {formatFileSize(anexo.tamanho)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))}
 
                                         {anexos.map((anexo, index) => (
-                                            <div key={`new-${index}`} className="relative group">
-                                                <div className="absolute -top-2 -left-2 z-10 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-semibold animate-bounce">
-                                                    NOVO
-                                                </div>
+                                            <div key={index} className="relative group">
                                                 <div
                                                     onClick={() => handleVisualizarAnexo(anexo)}
-                                                    className="aspect-square bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center cursor-pointer hover:bg-gray-200 hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                                                    className="aspect-square bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center cursor-pointer hover:bg-gray-200 hover:shadow-lg transition-all duration-200"
                                                     title="Clique para visualizar"
                                                 >
                                                     {anexo.type === 'image' && (
@@ -549,6 +598,7 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
 
                                                 <button
                                                     onClick={() => handleRemoverAnexo(index)}
+                                                    type="button"
                                                     className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-red-600"
                                                     title="Remover arquivo"
                                                 >
@@ -580,21 +630,19 @@ export default function ModalTarefa({ isOpen, onClose, onSave, onDelete, initial
                         </main>
 
                         <footer className="flex justify-between items-center mt-8">
-                            {initialData && (
-                                <button
-                                    onClick={handleDelete}
-                                    className={`px-6 py-3 rounded-full font-semibold text-sm text-white transition-all duration-300 shadow-lg transform hover:scale-110 ${showDeleteConfirm
-                                        ? 'bg-red-700 hover:bg-red-800 animate-pulse'
-                                        : 'bg-red-500 hover:bg-red-600'
-                                        }`}
-                                >
-                                    {showDeleteConfirm ? 'CONFIRMAR EXCLUSÃO' : 'EXCLUIR'}
-                                </button>
-                            )}
+                            <button
+                                onClick={handleDelete}
+                                type="button"
+                                className={`px-4 py-2 rounded-lg font-semibold text-sm text-red-50 transition-colors ${showDeleteConfirm ? 'bg-red-700' : 'bg-red-500 hover:bg-red-600'
+                                    }`}
+                            >
+                                {showDeleteConfirm ? 'CONFIRMAR EXCLUSÃO' : 'EXCLUIR'}
+                            </button>
 
                             <button
                                 onClick={handleSave}
-                                className="ml-auto px-6 py-3 bg-blue-500 hover:bg-blue-600 rounded-full font-semibold text-sm text-white transition-all duration-300 shadow-lg transform hover:scale-110 hover:shadow-2xl"
+                                type="button"
+                                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg font-semibold text-sm text-red-50 transition-colors"
                             >
                                 SALVAR
                             </button>
