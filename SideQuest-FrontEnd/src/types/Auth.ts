@@ -26,7 +26,7 @@ export type LoginResponse = {
     id: string;
     nome: string;
     email: string;
-    mensagem: string;
+    token: string;
 }
 
 // Resumo de Usuario

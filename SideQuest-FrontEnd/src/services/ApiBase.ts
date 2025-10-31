@@ -1,55 +1,66 @@
 // src/services/ApiBase.ts
 const DEFAULT_BASE = 'http://localhost:8080';
-const BASE_URL = (import.meta.env && (import.meta.env.VITE_API_BASE as string)) || DEFAULT_BASE;
 
 export class ApiBase {
-  protected baseUrl = BASE_URL;
+  protected baseUrl = import.meta.env.VITE_API_URL ?? DEFAULT_BASE;
+  protected token?: string;
 
-  protected async makeRequest<T = unknown>(url: string, options: RequestInit = {}): Promise<T> {
-    try {
-      const finalUrl = url.startsWith('http') ? url : `${this.baseUrl}${url}`;
-      const response = await fetch(finalUrl, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
-        ...options,
-      });
+  protected async makeRequest<T>(
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    url: string,
+    body?: unknown
+  ): Promise<T> {
+    const fullUrl = this.baseUrl + url;
 
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Erro HTTP ${response.status}: ${errorData}`);
-      }
+    const resp = await fetch(fullUrl, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.token ? { Authorization: `Bearer ${this.token}` } : {})
+      },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      credentials: 'include'
+    });
 
-      if (response.status === 204) return null as unknown as T;
-
-      const contentType = response.headers.get('Content-Type') || '';
-      if (contentType.includes('application/json')) {
-        return (await response.json()) as T;
-      }
-
-      return (await response.text()) as unknown as T;
-    } catch (error) {
-      // mantém log para dev, mas propaga o erro para o caller tratar
-      console.error('Erro na requisição:', error);
-      throw error;
+    // Trata erro primeiro
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '');
+      throw new Error(`Erro HTTP ${resp.status}: ${text}`);
     }
+
+    // Sem corpo: 204/205 ou Content-Length: 0
+    if (resp.status === 204 || resp.status === 205) {
+      return undefined as unknown as T;
+    }
+    const contentLength = resp.headers.get('content-length');
+    if (contentLength === '0') {
+      return undefined as unknown as T;
+    }
+
+    // Só parseia JSON se o content-type indicar JSON e houver texto
+    const contentType = resp.headers.get('content-type') ?? '';
+    if (!contentType.includes('application/json')) {
+      return undefined as unknown as T;
+    }
+
+    const text = await resp.text();
+    if (!text) {
+      return undefined as unknown as T;
+    }
+
+    return JSON.parse(text) as T;
   }
 
-  // conveniências
-  protected get<T = unknown>(url: string): Promise<T> {
-    return this.makeRequest<T>(url, { method: 'GET' });
+  protected get<T>(url: string) {
+    return this.makeRequest<T>('GET', url);
   }
-
-  protected post<T = unknown>(url: string, body?: unknown): Promise<T> {
-    return this.makeRequest<T>(url, { method: 'POST', body: body ? JSON.stringify(body) : undefined });
+  protected post<T>(url: string, body?: unknown) {
+    return this.makeRequest<T>('POST', url, body);
   }
-
-  protected put<T = unknown>(url: string, body?: unknown): Promise<T> {
-    return this.makeRequest<T>(url, { method: 'PUT', body: body ? JSON.stringify(body) : undefined });
+  protected put<T>(url: string, body?: unknown) {
+    return this.makeRequest<T>('PUT', url, body);
   }
-
-  protected delete<T = unknown>(url: string): Promise<T> {
-    return this.makeRequest<T>(url, { method: 'DELETE' });
+  protected delete<T>(url: string) {
+    return this.makeRequest<T>('DELETE', url);
   }
 }

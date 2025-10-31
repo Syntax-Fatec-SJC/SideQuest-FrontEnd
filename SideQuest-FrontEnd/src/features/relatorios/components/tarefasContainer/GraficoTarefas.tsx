@@ -39,14 +39,14 @@ const GraficoTarefas: React.FC<GraficoStatusProps> = ({ tarefas }) => {
   }
 
   return (
-    <div className="w-full h-92 m-2 flex justify-center items-center">
+    <div className="w-full h-92 flex justify-center items-center">
   <ResponsiveContainer width="100%" height="100%">
     <PieChart>
       <Pie
         data={dados}
         dataKey="value"
         nameKey="name"
-        cx="50%"
+        cx="55%"
         cy="50%"
         outerRadius={140} 
         label={(entry) => `${entry.name}: ${entry.value}`}

@@ -20,13 +20,11 @@ export default function Membros() {
     const projetoSelecionadoId =
         typeof window !== 'undefined' ? localStorage.getItem('projetoSelecionadoId') : null;
 
-    // 🔹 Ajuste automático da quantidade de membros por página conforme altura da tela
     useEffect(() => {
         const calcularMembrosPorPagina = () => {
             const altura = window.innerHeight;
-            // define quantos cards cabem de forma proporcional
-            const estimado = Math.floor((altura - 300) / 80); 
-            setMembrosPorPagina(Math.max(3, estimado)); // mínimo 3 por segurança
+            const estimado = Math.floor((altura - 300) / 80);
+            setMembrosPorPagina(Math.max(3, estimado));
         };
         calcularMembrosPorPagina();
         window.addEventListener('resize', calcularMembrosPorPagina);
@@ -139,7 +137,7 @@ export default function Membros() {
     return (
         <div className="flex h-screen relative overflow-hidden">
             <Sidebar />
-            <main className="flex-1 bg-white rounded-3xl p-8 shadow-lg mt-8 mb-8 mx-4">
+            <main className="flex-1 flex flex-col bg-white rounded-3xl p-4 sm:p-8 mt-8 mb-20 sm:mb-8 mx-2 sm:mx-4">
                 <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold mb-6 text-center text-azul-escuro">
                     MEMBROS DO PROJETO
                 </h1>
@@ -183,11 +181,11 @@ export default function Membros() {
                                     setLinhaEdicao(prev =>
                                         prev
                                             ? {
-                                                  ...prev,
-                                                  nome: valor,
-                                                  usuarioIdSelecionado: undefined,
-                                                  erro: undefined
-                                              }
+                                                ...prev,
+                                                nome: valor,
+                                                usuarioIdSelecionado: undefined,
+                                                erro: undefined
+                                            }
                                             : prev
                                     );
                                     setListaAberta(true);
@@ -219,12 +217,12 @@ export default function Membros() {
                                                     setLinhaEdicao(prev =>
                                                         prev
                                                             ? {
-                                                                  ...prev,
-                                                                  usuarioIdSelecionado: u.id,
-                                                                  nome: u.nome,
-                                                                  email: u.email,
-                                                                  erro: undefined
-                                                              }
+                                                                ...prev,
+                                                                usuarioIdSelecionado: u.id,
+                                                                nome: u.nome,
+                                                                email: u.email,
+                                                                erro: undefined
+                                                            }
                                                             : prev
                                                     );
                                                     setListaAberta(false);
@@ -260,114 +258,116 @@ export default function Membros() {
                 )}
 
                 {/* Lista de membros */}
-                {loadingLista ? (
-                    <div className="text-center text-gray-500">Carregando...</div>
-                ) : filtered.length === 0 ? (
-                    <div className="text-center text-gray-500">Nenhum membro.</div>
-                ) : (
-                    <>
-                        <div className="space-y-2">
-                            {membrosPagina.map(m => (
-                                <div
-                                    key={m.usuarioId}
-                                    className="bg-[#F5F5F5] rounded-lg shadow p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2"
-                                >
-                                    <div className="flex flex-col">
-                                        <span className="font-semibold flex items-center gap-2">
-                                            {m.nome}
-                                            {m.criador && (
-                                                <span className="text-xs bg-indigo-600 text-white px-2 py-[2px] rounded-full">
-                                                    Criador
-                                                </span>
-                                            )}
-                                        </span>
-                                        <span className="text-sm text-gray-600">{m.email}</span>
-                                    </div>
-                                    {!m.criador && (
-                                        confirmandoRemocaoId === m.usuarioId ? (
-                                            <div className="flex gap-2 items-center">
+                <div className="flex-1 h-[calc(90vh-160px)] overflow-auto pb-16 sm:h-auto sm:overflow-visible sm:pb-0">
+
+                    {loadingLista ? (
+                        <div className="text-center text-gray-500">Carregando...</div>
+                    ) : filtered.length === 0 ? (
+                        <div className="text-center text-gray-500">Nenhum membro.</div>
+                    ) : (
+                        <>
+                            <div className="space-y-2">
+                                {membrosPagina.map(m => (
+                                    <div
+                                        key={m.usuarioId}
+                                        className="bg-[#F5F5F5] rounded-lg shadow p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2"
+                                    >
+                                        <div className="flex flex-col">
+                                            <span className="font-semibold flex items-center gap-2">
+                                                {m.nome}
+                                                {m.criador && (
+                                                    <span className="text-xs bg-indigo-600 text-white px-2 py-2px rounded-full">
+                                                        Criador
+                                                    </span>
+                                                )}
+                                            </span>
+                                            <span className="text-sm text-gray-600">{m.email}</span>
+                                        </div>
+                                        {!m.criador && (
+                                            confirmandoRemocaoId === m.usuarioId ? (
+                                                <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+                                                    <button
+                                                        disabled={loadingAcao}
+                                                        onClick={() => remover(m.usuarioId)}
+                                                        className="w-full sm:w-auto px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm disabled:opacity-50 transition-colors"
+                                                    >
+                                                        Excluir
+                                                    </button>
+                                                    <button
+                                                        disabled={loadingAcao}
+                                                        onClick={() => setConfirmandoRemocaoId(null)}
+                                                        className="w-full sm:w-auto px-3 py-2 bg-gray-300 rounded-md hover:bg-gray-400 text-sm disabled:opacity-50 transition-colors"
+                                                    >
+                                                        Cancelar
+                                                    </button>
+                                                </div>
+
+                                            ) : (
                                                 <button
                                                     disabled={loadingAcao}
-                                                    onClick={() => remover(m.usuarioId)}
-                                                    className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm disabled:opacity-50"
+                                                    onClick={() => setConfirmandoRemocaoId(m.usuarioId)}
+                                                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm disabled:opacity-50"
                                                 >
                                                     Excluir
                                                 </button>
-                                                <button
-                                                    disabled={loadingAcao}
-                                                    onClick={() => setConfirmandoRemocaoId(null)}
-                                                    className="px-3 py-2 bg-gray-300 rounded-md hover:bg-gray-400 text-sm disabled:opacity-50"
-                                                >
-                                                    Cancelar
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <button
-                                                disabled={loadingAcao}
-                                                onClick={() => setConfirmandoRemocaoId(m.usuarioId)}
-                                                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm disabled:opacity-50"
-                                            >
-                                                Excluir
-                                            </button>
-                                        )
-                                    )}
-                                </div>
-                            ))}
-                        </div>
+                                            )
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
 
-                        {/* Paginação */}
-                        {totalPaginas > 1 && (
-                            <div className="flex justify-center mt-4 gap-2">
-                                <button
-                                    onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))}
-                                    disabled={paginaAtual === 1}
-                                    className="px-3 py-1 rounded-md text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 transition-colors"
-                                >
-                                    ‹
-                                </button>
-
-                                {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(num => (
+                            {/* Paginação */}
+                            {totalPaginas > 1 && (
+                                <div className="flex justify-center mt-4 gap-2">
                                     <button
-                                        key={num}
-                                        onClick={() => setPaginaAtual(num)}
-                                        className={`px-3 py-1 rounded-md transition-colors ${
-                                            paginaAtual === num
+                                        onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))}
+                                        disabled={paginaAtual === 1}
+                                        className="px-3 py-1 rounded-md text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                                    >
+                                        ‹
+                                    </button>
+
+                                    {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(num => (
+                                        <button
+                                            key={num}
+                                            onClick={() => setPaginaAtual(num)}
+                                            className={`px-3 py-1 rounded-md transition-colors ${paginaAtual === num
                                                 ? 'bg-blue-600 text-white'
                                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                        }`}
-                                    >
-                                        {num}
-                                    </button>
-                                ))}
+                                                }`}
+                                        >
+                                            {num}
+                                        </button>
+                                    ))}
 
-                                <button
-                                    onClick={() =>
-                                        setPaginaAtual(prev =>
-                                            Math.min(prev + 1, totalPaginas)
-                                        )
-                                    }
-                                    disabled={paginaAtual === totalPaginas}
-                                    className="px-3 py-1 rounded-md text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 transition-colors"
-                                >
-                                    ›
-                                </button>
-                            </div>
-                        )}
-                    </>
-                )}
+                                    <button
+                                        onClick={() =>
+                                            setPaginaAtual(prev =>
+                                                Math.min(prev + 1, totalPaginas)
+                                            )
+                                        }
+                                        disabled={paginaAtual === totalPaginas}
+                                        className="px-3 py-1 rounded-md text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                                    >
+                                        ›
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
 
                 {/* Toast */}
                 {toast && (
                     <div
-                        className={`fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded shadow-lg text-white text-sm ${
-                            toast.mensagem === 'Membro removido'
-                                ? 'bg-red-600'
-                                : toast.tipo === 'erro'
+                        className={`fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded shadow-lg text-white text-sm ${toast.mensagem === 'Membro removido'
+                            ? 'bg-red-600'
+                            : toast.tipo === 'erro'
                                 ? 'bg-orange-500'
                                 : toast.tipo === 'sucesso'
-                                ? 'bg-green-600'
-                                : 'bg-blue-600'
-                        }`}
+                                    ? 'bg-green-600'
+                                    : 'bg-blue-600'
+                            }`}
                     >
                         {toast.mensagem}
                     </div>

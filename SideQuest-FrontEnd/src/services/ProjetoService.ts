@@ -3,17 +3,30 @@ import { ApiBase } from './ApiBase';
 import type { Projeto, StatusProjeto } from '../types/Projeto';
 
 class ProjetoService extends ApiBase {
-  async listarProjetosDoUsuario(usuarioId: string): Promise<Projeto[]> {
-    return this.get<Projeto[]>(`/listar/${usuarioId}/projetos`);
+  async listarProjetosDoUsuario(): Promise<Projeto[]> {
+    return this.get<Projeto[]>('/projetos/meus');
   }
 
-  async criarProjeto(usuarioIdCriador: string, dados: { nome: string; prazo?: string; descricao?: string }): Promise<Projeto> {
-    return this.post<Projeto>(`/cadastrar/projetos?usuarioIdCriador=${usuarioIdCriador}`, { 
-      nome: dados.nome, 
+  async criarProjeto(
+    data: { nome: string; prazo: string; descricao?: string },
+    usuarioIdCriador: string
+  ) {
+    const prazoISO = data.prazo
+      ? new Date(`${data.prazo}T00:00:00`).toISOString()
+      : undefined;
+
+    const payload = {
+      nome: data.nome,
       status: 'ATIVO' as StatusProjeto,
-      ...(dados.prazo && { prazo: dados.prazo }),
-      ...(dados.descricao && { descricao: dados.descricao })
-    });
+      ...(data.descricao ? { descricao: data.descricao } : {}),
+      ...(prazoISO ? { prazoFinal: prazoISO } : {})
+    };
+
+    // usuarioIdCriador vai como query param; body vai no corpo em JSON
+    return this.post(
+      `/cadastrar/projetos?usuarioIdCriador=${encodeURIComponent(usuarioIdCriador)}`,
+      payload
+    );
   }
 
   async atualizarProjeto(id: string, dados: Partial<Pick<Projeto, 'nome' | 'status' | 'usuarioIds'>>): Promise<Projeto> {

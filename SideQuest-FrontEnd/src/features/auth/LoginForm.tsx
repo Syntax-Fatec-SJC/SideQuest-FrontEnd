@@ -46,9 +46,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
       }
 
       const resposta = await usuarioService.realizarLogin(dadosParaLogin);
-      setMensagem(resposta.mensagem);
-      console.log('Login realizado:', resposta);
 
+      // Salvar o token JWT
+      if (resposta.token) {
+        localStorage.setItem('token', resposta.token);
+      }
+
+      // Salvar dados do usuário
       const usuarioSessao = {
         id: resposta.id,
         nome: resposta.nome,
@@ -58,6 +62,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
       localStorage.setItem('usuarioLogado', JSON.stringify(usuarioSessao));
       localStorage.setItem('usuario', JSON.stringify(usuarioSessao));
       localStorage.setItem('usuarioId', usuarioSessao.id);
+
+      setMensagem('Login realizado com sucesso!');
 
       setTimeout(() => {
         navigate('/projetos');

@@ -6,6 +6,7 @@ import { tratarErro } from "../../../shared/errors";
 import { useToast } from "../../../shared/hooks/useToast";
 import { obterUsuarioLogadoId } from "../utils/usuarioLogado";
 import { mensagensErro, mensagensSucesso } from "../utils/validacoes";
+import { useAuth } from '../../../shared/hooks/useAuth';
 
 export function useProjetos() {
   const navigate = useNavigate();
@@ -15,8 +16,9 @@ export function useProjetos() {
   const [erro, setErro] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [projetoSelecionadoId, setProjetoSelecionadoId] = useState<string | null>(null);
-  const [creating, setCreating] = useState<boolean>(false);
+  const [creating] = useState<boolean>(false);
   const [removendoId, setRemovendoId] = useState<string | null>(null);
+  const { usuario } = useAuth();
 
   const usuarioLogadoId = obterUsuarioLogadoId();
 
@@ -36,7 +38,7 @@ export function useProjetos() {
     setErro(null);
 
     try {
-      const lista = await projetoService.listarProjetosDoUsuario(usuarioLogadoId);
+      const lista = await projetoService.listarProjetosDoUsuario();
       setProjetos(lista);
 
       if (lista.length > 0 && !projetoSelecionadoId) {
@@ -58,33 +60,39 @@ export function useProjetos() {
     }
   }
 
-  async function criarProjeto(dados: {
-    nome: string;
-    descricao?: string;
-    usuarios?: string[];
-    prazo: string;
-  }) {
-    if (!usuarioLogadoId || !dados.nome.trim()) return;
-    setCreating(true);
+  const criarProjeto = async (form: { nome: string; prazo: string; descricao?: string }) => {
+    if (!usuario?.id) throw new Error('Usuário não autenticado');
 
-    try {
-      const novo = await projetoService.criarProjeto(usuarioLogadoId, {
-        nome: dados.nome.trim(),
-        prazo: dados.prazo,
-        ...(dados.descricao && { descricao: dados.descricao })
-      });
-      setProjetos(prev => [...prev, novo]);
-      setProjetoSelecionadoId(novo.id);
-      localStorage.setItem("projetoSelecionadoId", novo.id);
-      setShowModal(false);
-      show({ tipo: 'sucesso', mensagem: mensagensSucesso.projetoCriado });
-    } catch (e: unknown) {
-      const erro = tratarErro(e);
-      show({ tipo: 'erro', mensagem: erro.message || "Erro ao criar projeto" });
-    } finally {
-      setCreating(false);
-    }
-  }
+    // try to create on server and capture returned project if available
+    const created = await projetoService.criarProjeto(
+      { nome: form.nome, prazo: form.prazo, descricao: form.descricao },
+      usuario.id
+    );
+
+    // append a full Projeto object to the state (ensure required fields are present)
+    setProjetos(prev => {
+      const newId = created && (created as Partial<Projeto>).id ? (created as Projeto).id : (prev.length + 1).toString();
+      const novoProjeto: Projeto = {
+        id: newId,
+        nome: form.nome,
+        descricao: form.descricao,
+        prazo: form.prazo,
+        // provide sensible defaults if the service didn't return them
+        status: (created && (created as any).status) || 'ativo',
+        usuarioIds: (created && (created as any).usuarioIds) || [usuario.id],
+      };
+      const next = [...prev, novoProjeto];
+
+      // update selected projeto and persist selection
+      setProjetoSelecionadoId(novoProjeto.id);
+      localStorage.setItem("projetoSelecionadoId", novoProjeto.id);
+
+      return next;
+    });
+
+    setShowModal(false);
+    show({ tipo: 'sucesso', mensagem: mensagensSucesso.projetoCriado });
+  };
 
   async function excluirProjeto(id: string, ev?: React.MouseEvent<HTMLButtonElement>) {
     if (ev) ev.stopPropagation();
