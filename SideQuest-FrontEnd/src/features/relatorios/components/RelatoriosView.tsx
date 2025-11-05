@@ -13,7 +13,6 @@ interface RelatoriosViewProps {
   erro: string | null;
 }
 
-
 export function RelatoriosView({
   tarefas,
   dadosMembros,
@@ -38,8 +37,7 @@ export function RelatoriosView({
   return (
     <div className="flex relative">
       <Sidebar />
-      <div
-        className="flex-1 p-4 custom-scrollbar flex flex-col justify-start items-center gap-8 max-sm:mt-4 max-sm:mb-20 max-sm:mx-2 max-sm:p-2">
+      <div className="flex-1 mx-2 sm:mx-4 mt-8 mb-20 sm:mb-8 custom-scrollbar flex flex-col justify-start items-center gap-2 sm:gap-4">
         {/* Gráfico de Tarefas*/}
         {tarefasLoading ? (
           <div className="w-full flex justify-center items-center min-h-[300px]">
@@ -48,7 +46,6 @@ export function RelatoriosView({
         ) : (
           <GraficoTarefasContainer tarefas={tarefas} />
         )}
-
         {/* gráfico de membros */}
         <div className="w-full">
           {membrosLoading ? (
@@ -65,3 +62,4 @@ export function RelatoriosView({
     </div>
   );
 }
+
