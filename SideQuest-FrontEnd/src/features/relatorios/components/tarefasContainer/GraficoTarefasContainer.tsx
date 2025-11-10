@@ -9,7 +9,7 @@ interface GraficoTarefasContainerProps {
 
 const GraficoTarefasContainer: React.FC<GraficoTarefasContainerProps> = ({ tarefas }) => {
   return (
-    <div className="bg-white border border-gray-200 rounded-3xl shadow-lg p-8 w-full flex flex-col items-center gap-4">
+    <div className="bg-white border border-gray-200 rounded-3xl shadow-lg p-4 w-full flex flex-col items-center gap-4">
       <h2 className="text-3xl sm:text-4xl md:text-5xl font-semibold text-center text-azul-escuro">
         TAREFAS
       </h2>
