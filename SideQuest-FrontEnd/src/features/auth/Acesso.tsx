@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import LoginForm from './LoginForm';
-import CadastroForm from './CadastroForm';
-import PainelAcesso from './PainelAcesso';
+import LoginForm from './components/LoginForm';
+import CadastroForm from './components/CadastroForm';
+import PainelAcesso from './containers/PainelAcesso';
 
 const Acesso: React.FC = () => {
   const [active, setActive] = useState(false);

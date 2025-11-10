@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-// import BotaoGoogle from '../BotaoGoogle';
 import './LoginForm.css';
-// import type { LoginDTO } from '../../types/api';
-import type { Login } from '../../types/Auth';
-import { usuarioService } from '../../services/AuthService';
-import type { LoginHandler } from '../../types/Auth';
+import { usuarioService } from '../../../services/AuthService';
+import type { Login, LoginHandler } from '../../../types/Auth';
+import useAuth from '../../../shared/hooks/useAuth'; 
 
 interface LoginFormProps {
   onLogin?: LoginHandler;
@@ -16,6 +14,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   const [mensagem, setMensagem] = useState('');
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const navigate = useNavigate();
+  const { refresh } = useAuth(); // ✅ chama o hook no topo
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLoginData({ ...loginData, [e.target.name]: e.target.value });
@@ -25,14 +24,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     e.preventDefault();
     setMensagem('');
 
-    // If parent provided an onLogin, call it first. If it returns/ resolves to true,
-    // consider the submission handled by the parent and skip internal flow.
     if (onLogin) {
       try {
         const handled = await Promise.resolve(onLogin(loginData));
         if (handled === true) return;
       } catch (err) {
-        // If parent handler throws, log and continue with internal flow
         console.error('onLogin handler threw an error:', err);
       }
     }
@@ -42,26 +38,27 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     try {
       const dadosParaLogin: Login = {
         email: loginData.email,
-        senha: loginData.password
-      }
+        senha: loginData.password,
+      };
 
       const resposta = await usuarioService.realizarLogin(dadosParaLogin);
 
-      // Salvar o token JWT
       if (resposta.token) {
         localStorage.setItem('token', resposta.token);
       }
 
-      // Salvar dados do usuário
       const usuarioSessao = {
         id: resposta.id,
         nome: resposta.nome,
-        email: resposta.email
+        email: resposta.email,
       };
 
       localStorage.setItem('usuarioLogado', JSON.stringify(usuarioSessao));
       localStorage.setItem('usuario', JSON.stringify(usuarioSessao));
       localStorage.setItem('usuarioId', usuarioSessao.id);
+
+      // ✅ Atualiza contexto global de autenticação
+      refresh();
 
       setMensagem('Login realizado com sucesso!');
 
@@ -85,20 +82,17 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
       >
         <h1 className="text-[#1565C0] text-2xl font-bold mb-2">Entrar</h1>
 
-        {/* <div className="social-icons flex my-4 w-full">
-          <BotaoGoogle texto="Entrar com conta Google" />
-        </div> */}
         {mensagem && (
-          <div className={`w-full p-2 rounded mb-3 text-center text-sm transition-colors duration-200 ${
-            mensagem.includes('sucesso')
-              ? ' text-[#1565C0] '
-              : ' text-red-700'
-          }`}>
+          <div
+            className={`w-full p-2 rounded mb-3 text-center text-sm transition-colors duration-200 ${
+              mensagem.includes('sucesso')
+                ? ' text-[#1565C0] '
+                : ' text-red-700'
+            }`}
+          >
             {mensagem}
           </div>
         )}
-
-        {/* <span className="text-[#1565C0] text-xs mb-2">ou use sua conta</span> */}
 
         <input
           type="email"
@@ -119,13 +113,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
           className="bg-[#E3F2FD] text-[#1565C0] rounded-lg px-4 py-2 mb-2 w-full border border-[#1565C0] min-w-[180px] sm:min-w-[220px]"
           required
         />
-
-        {/* <a
-          href="#"
-          className="text-[#FFD600] text-xs mb-2 hover:underline"
-        >
-          Esqueceu a senha?
-        </a> */}
 
         <button
           type="submit"

@@ -1,9 +1,10 @@
 import { ProjetosContainer } from "./containers/ProjetosContainer";
+import { ProtecaoPage } from "../../shared/components/ProtecaoPage";
 
-/**
- * Ponto de entrada da feature de projetos.
- * Delega toda lógica para o container apropriado.
- */
-export default function GerenciarProjetos() {
-  return <ProjetosContainer />;
+export default function Projetos() {
+  return (
+    <ProtecaoPage>
+      <ProjetosContainer />
+    </ProtecaoPage>
+  );
 }
