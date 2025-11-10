@@ -1,5 +1,10 @@
 import { DashboardContainer } from "./containers/DashboardContainer";
+import { ProtecaoPage } from "../../shared/components/ProtecaoPage";
 
 export default function Dashboard() {
-  return <DashboardContainer />;
+  return (
+    <ProtecaoPage>
+      <DashboardContainer />
+    </ProtecaoPage>
+  );
 }

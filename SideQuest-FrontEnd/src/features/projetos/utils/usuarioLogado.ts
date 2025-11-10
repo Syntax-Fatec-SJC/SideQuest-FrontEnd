@@ -1,7 +1,3 @@
-/**
- * Obtém o ID do usuário logado a partir do localStorage
- * Verifica múltiplas chaves para compatibilidade com versões antigas
- */
 export function obterUsuarioLogadoId(): string | null {
   const rawNovo = localStorage.getItem("usuarioLogado");
   if (rawNovo) {
@@ -24,10 +20,6 @@ export function obterUsuarioLogadoId(): string | null {
   return localStorage.getItem("usuarioId");
 }
 
-/**
- * Obtém o email do usuário logado a partir do localStorage
- * Verifica múltiplas chaves para compatibilidade com versões antigas
- */
 export function obterUsuarioLogadoEmail(): string | null {
   const rawNovo = localStorage.getItem("usuarioLogado");
   if (rawNovo) {
