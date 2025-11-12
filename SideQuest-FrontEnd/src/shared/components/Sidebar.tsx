@@ -3,7 +3,7 @@ import {
   MdOutlinePeopleAlt, MdNotificationsNone, MdFolder, MdLogout, MdKeyboardArrowRight,
   MdKeyboardArrowLeft, MdDelete
 } from "react-icons/md";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from 'react';
 import type { IconType } from "react-icons";
 import useAuth from '../hooks/useAuth';
@@ -31,15 +31,16 @@ const SidebarLink = ({ icon: Icon, label, to = "#", onClick, active, indented }:
   </Link>
 );
 
-export default function Sidebar() {
+interface SidebarProps {
+  className?: string;
+}
+
+export default function Sidebar({ className }: SidebarProps) {
   const navigate = useNavigate();
-  const location = useLocation();
   const { logout, usuario } = useAuth();
   const [projetoSelecionadoId, setProjetoSelecionadoId] = useState<string | null>(() => localStorage.getItem('projetoSelecionadoId'));
   const [expandido, setExpandido] = useState(false);
 
-  // Detecta se está na página de Relatório
-  const isRelatorioPage = location.pathname === '/relatorio';
 
   useEffect(() => {
     const handler = (e: StorageEvent) => {
@@ -59,7 +60,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Sidebar lateral desktop */}
-      <div className="hidden sm:flex w-52 bg-white shadow-lg my-8 mb-8 flex-col p-4 rounded-r-3xl border-r-2 border-gray-200">
+      <div className={`hidden sm:flex w-52 bg-white shadow-lg my-8 flex-col p-4 rounded-r-3xl border-r-2 border-gray-200 ${className}`}>
         <div className="flex flex-col items-center mt-10 mb-4">
           <div className="bg-gray-300 rounded-full w-20 h-20 flex items-center justify-center">
             <span className="text-black text-5xl"><BiSolidUser /></span>
@@ -72,7 +73,7 @@ export default function Sidebar() {
           </p>
         </div>
 
-        <div className={`flex flex-col gap-2 px-4 ${isRelatorioPage ? 'mb-23' : 'flex-1'}`}>
+        <div className="flex flex-col gap-2 px-4 flex-1">
           <SidebarLink icon={MdOutlineDashboard} label="Dashboard" to="/dashboard" />
           <SidebarLink icon={MdOutlineCalendarToday} label="Calendário" to="/calendario" />
           <SidebarLink icon={MdNotificationsNone} label="Avisos" to="/avisos" />
@@ -88,7 +89,7 @@ export default function Sidebar() {
           )}
         </div>
 
-        <div className="flex flex-col gap-2 px-4 mb-4">
+        <div className="flex flex-col gap-2 px-4 mb-3.5 mt-6">
           <SidebarLink icon={MdDelete} label="Lixeira" to="/lixeira" />
           <SidebarLink icon={MdLogout} label="Sair" onClick={handleLogout} to="/acesso" />
         </div>
