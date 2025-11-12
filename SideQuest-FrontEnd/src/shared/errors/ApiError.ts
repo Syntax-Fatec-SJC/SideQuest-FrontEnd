@@ -1,7 +1,7 @@
 export type ErroApi = {
-  message: string;        
-  codigo?: number;       
-  detalhes?: unknown;     
+  message: string;
+  codigo?: number;
+  detalhes?: unknown;
 };
 
 export class ApiError extends Error implements ErroApi {
@@ -17,7 +17,6 @@ export class ApiError extends Error implements ErroApi {
     Object.setPrototypeOf(this, ApiError.prototype);
   }
 
-  // Cria um ApiError a partir de um valor desconhecido
   static fromUnknown(err: unknown): ApiError {
     if (err instanceof ApiError) return err;
 
