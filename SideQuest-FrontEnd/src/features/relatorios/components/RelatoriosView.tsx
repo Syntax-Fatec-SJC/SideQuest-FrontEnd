@@ -25,7 +25,7 @@ export function RelatoriosView({
     
     return (
       <div className="flex relative">
-        <Sidebar />
+        <Sidebar className="self-start" />
         <div className="flex-1 p-4 mt-4 custom-scrollbar flex flex-col justify-center items-center">
           <div className="text-red-500 text-center">
             <p className="text-xl mb-2">
@@ -40,7 +40,7 @@ export function RelatoriosView({
 
   return (
     <div className="flex relative">
-      <Sidebar />
+      <Sidebar className="self-start" />
       <div className="flex-1 mx-2 sm:mx-4 mt-8 mb-20 sm:mb-8 custom-scrollbar flex flex-col justify-start items-center gap-2 sm:gap-4">
         {/* Gráfico de Tarefas*/}
         {tarefasLoading ? (
