@@ -3,15 +3,15 @@ import type { MembroProjeto } from '../types/Membro';
 
 class MembroService extends ApiBase {
   async listarMembrosProjeto(projetoId: string): Promise<MembroProjeto[]> {
-    return this.get<MembroProjeto[]>(`/listar/${projetoId}/membros`);
+    return this.get<MembroProjeto[]>(`/projetos/${projetoId}/membros`);
   }
 
   async adicionarMembroProjeto(projetoId: string, usuarioId: string): Promise<void> {
-    await this.post(`/adicionar/${projetoId}/membros/${usuarioId}`);
+    await this.post(`/projetos/${projetoId}/membros`, { usuarioIds: [usuarioId] });
   }
 
   async removerMembroProjeto(projetoId: string, usuarioId: string): Promise<void> {
-    await this.delete(`/excluir/${projetoId}/membros/${usuarioId}`);
+    await this.delete(`/projetos/${projetoId}/membros/${usuarioId}`);
   }
 }
 

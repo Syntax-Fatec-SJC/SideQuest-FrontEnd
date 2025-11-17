@@ -28,6 +28,16 @@ export function useProjetos() {
 
   const carregarProjetos = useCallback(async () => {
     canceladoRef.current = false;
+    
+    // Verificar se há token antes de fazer requisição
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
+      setProjetos([]);
+      setErro(null);
+      return;
+    }
+
     setLoading(true);
     setErro(null);
 

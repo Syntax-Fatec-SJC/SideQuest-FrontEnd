@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMembros } from "../hooks/useMembros";
 import { MembrosView } from "../components/MembrosView";
 import { useAuth } from "../../../shared/hooks/useAuth";
@@ -13,6 +13,24 @@ export function MembrosContainer() {
   const [busca, setBusca] = useState("");
   const [confirmandoRemocaoId, setConfirmandoRemocaoId] = useState<string | null>(null);
   const [listaAberta, setListaAberta] = useState(false);
+
+  const hookResult = useMembros(projetoSelecionadoId, usuario);
+
+  // Verificação de segurança
+  useEffect(() => {
+    if (!hookResult) {
+      console.error("useMembros retornou undefined");
+    }
+  }, [hookResult]);
+
+  if (!hookResult) {
+    return (
+      <ConexaoPage
+        erroMensagem="Erro ao carregar componente de membros"
+        onTentarNovamente={() => window.location.reload()}
+      />
+    );
+  }
 
   const {
     linhaEdicao,
@@ -31,12 +49,12 @@ export function MembrosContainer() {
     removerMembro,
     carregarDados,
     error
-  } = useMembros(projetoSelecionadoId, usuario); 
+  } = hookResult;
 
-  const membrosNaPagina = membrosPaginaAtual(busca);
-  const totalPaginas = Math.ceil(membrosFiltrados(busca).length / membrosPorPagina);
-
-  const erroServidor = error && membrosNaPagina.length === 0;
+  const membrosNaPagina = membrosPaginaAtual ? membrosPaginaAtual(busca) : [];
+  const totalPaginas = membrosFiltrados 
+    ? Math.ceil(membrosFiltrados(busca).length / (membrosPorPagina || 1))
+    : 0;  const erroServidor = error && membrosNaPagina.length === 0;
 
   if (erroServidor) {
     return (
@@ -52,23 +70,23 @@ export function MembrosContainer() {
       projetoSelecionadoId={projetoSelecionadoId}
       busca={busca}
       setBusca={setBusca}
-      paginaAtual={paginaAtual}
-      setPaginaAtual={setPaginaAtual}
+      paginaAtual={paginaAtual ?? 1}
+      setPaginaAtual={setPaginaAtual ?? (() => {})}
       totalPaginas={totalPaginas}
       membrosNaPagina={membrosNaPagina}
       linhaEdicao={linhaEdicao}
-      setLinhaEdicao={setLinhaEdicao}
-      usuariosDisponiveis={usuariosDisponiveis}
+      setLinhaEdicao={setLinhaEdicao ?? (() => {})}
+      usuariosDisponiveis={usuariosDisponiveis ?? []}
       listaAberta={listaAberta}
       setListaAberta={setListaAberta}
-      iniciarEdicao={iniciarEdicao}
-      cancelarEdicao={cancelarEdicao}
-      salvarLinha={salvarLinha}
-      removerMembro={removerMembro}
+      iniciarEdicao={iniciarEdicao ?? (() => {})}
+      cancelarEdicao={cancelarEdicao ?? (() => {})}
+      salvarLinha={salvarLinha ?? (async () => {})}
+      removerMembro={removerMembro ?? (async () => {})}
       confirmandoRemocaoId={confirmandoRemocaoId}
       setConfirmandoRemocaoId={setConfirmandoRemocaoId}
-      loadingLista={loadingLista}
-      loadingAcao={loadingAcao}
+      loadingLista={loadingLista ?? false}
+      loadingAcao={loadingAcao ?? false}
     />
   );
 }

@@ -3,11 +3,11 @@ import type { Login, LoginResponse, Usuario, UsuarioCompleto, UsuarioResumo } fr
 
 class UsuarioService extends ApiBase {
   async cadastrarUsuario(dadosUsuario: Usuario): Promise<UsuarioCompleto> {
-    return this.post<UsuarioCompleto>('/cadastrar/usuarios', dadosUsuario);
+    return this.post<UsuarioCompleto>('/usuario/cadastrar', dadosUsuario);
   }
 
   async realizarLogin(dadosLogin: Login): Promise<LoginResponse> {
-    return this.post<LoginResponse>('/login', dadosLogin);
+    return this.post<LoginResponse>('/usuario/login', dadosLogin);
   }
 
   async realizarLogout(): Promise<void> {
@@ -15,7 +15,19 @@ class UsuarioService extends ApiBase {
   }
 
   async listarUsuarios(): Promise<UsuarioResumo[]> {
-    return this.get<UsuarioResumo[]>('/usuarios');
+    return this.get<UsuarioResumo[]>('/listar/usuarios');
+  }
+
+  async buscarUsuario(id: string): Promise<UsuarioCompleto> {
+    return this.get<UsuarioCompleto>(`/usuarios/${id}`);
+  }
+
+  async atualizarUsuario(id: string, dados: Partial<Usuario>): Promise<UsuarioCompleto> {
+    return this.put<UsuarioCompleto>(`/usuarios/${id}`, dados);
+  }
+
+  async deletarUsuario(id: string): Promise<void> {
+    return this.delete<void>(`/usuarios/${id}`);
   }
 }
 

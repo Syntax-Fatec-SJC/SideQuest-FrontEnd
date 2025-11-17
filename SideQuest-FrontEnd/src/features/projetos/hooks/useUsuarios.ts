@@ -21,6 +21,16 @@ export function useUsuariosProjeto() {
 
   const recarregar = useCallback(async () => {
     canceladoRef.current = false;
+    
+    // Verificar se há token antes de fazer requisição
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
+      setUsuariosAdicionados([]);
+      setErro(null);
+      return;
+    }
+
     setLoading(true);
     setErro(null);
 

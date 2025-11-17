@@ -117,10 +117,10 @@ export default function ModalTarefa({
                   </div>
                   {formData.responsible.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-3">
-                      {formData.responsible.map((r) => {
+                      {formData.responsible.map((r, idx) => {
                         const m = membrosProjeto.find((m) => m.usuarioId === r);
                         return (
-                          <span key={r} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                          <span key={`resp-${r}-${idx}`} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
                             {m?.nome || r}
                           </span>
                         );
