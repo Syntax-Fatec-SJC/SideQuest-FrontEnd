@@ -11,7 +11,7 @@ class TarefaService extends ApiBase {
   }
 
   async listarProximasEntregas(): Promise<Tarefa[]> {
-    return this.get<Tarefa[]>('/tarefas/proximas-entregas');
+    return this.get<Tarefa[]>('/listar/tarefas/proximas-entregas');
   }
 
   async criarTarefa(dados: Tarefa): Promise<Tarefa> {
@@ -24,6 +24,10 @@ class TarefaService extends ApiBase {
 
   async excluirTarefa(id: string): Promise<void> {
     await this.delete<void>(`/excluir/tarefas/${id}`);
+  }
+
+  async atualizarResponsaveis(id: string, usuarioIds: string[]): Promise<Tarefa> {
+    return this.patch<Tarefa>(`/tarefas/${id}/responsaveis`, { usuarioIds });
   }
 }
 

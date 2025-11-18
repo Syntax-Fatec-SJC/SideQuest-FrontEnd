@@ -18,7 +18,7 @@ export class ApiBase {
   }
 
   protected async makeRequest<T>(
-    method: "GET" | "POST" | "PUT" | "DELETE",
+    method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH",
     url: string,
     body?: unknown
   ): Promise<T> {
@@ -63,6 +63,9 @@ export class ApiBase {
   }
   protected put<T>(url: string, body?: unknown) {
     return this.makeRequest<T>("PUT", url, body);
+  }
+  protected patch<T>(url: string, body?: unknown) {
+    return this.makeRequest<T>("PATCH", url, body);
   }
   protected delete<T>(url: string) {
     return this.makeRequest<T>("DELETE", url);

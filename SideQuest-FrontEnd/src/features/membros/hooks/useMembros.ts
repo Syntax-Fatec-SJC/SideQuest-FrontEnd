@@ -47,22 +47,29 @@ export const useMembros = (projetoSelecionadoId: string | null, usuario: Usuario
 
     try {
       const [membrosResp, usuariosResp] = await Promise.all([
-        membrosService.listarMembrosProjeto(projetoSelecionadoId),
-        usuarioService.listarUsuarios(),
+        membrosService.listarMembrosProjeto(projetoSelecionadoId).catch(err => {
+          console.error('Erro ao listar membros:', err);
+          return [];
+        }),
+        usuarioService.listarUsuarios().catch(err => {
+          console.error('Erro ao listar usuários:', err);
+          return [];
+        }),
       ]);
 
       if (canceladoRef.current) return;
 
-      setMembros(membrosResp || []);
-      setUsuarios(usuariosResp || []);
+      setMembros(Array.isArray(membrosResp) ? membrosResp : []);
+      setUsuarios(Array.isArray(usuariosResp) ? usuariosResp : []);
 
-      if (usuario && !membrosResp.some(m => m.usuarioId === usuario.id)) {
+      if (usuario && Array.isArray(membrosResp) && !membrosResp.some(m => m.usuarioId === usuario.id)) {
         setError({ message: 'Falha ao conectar com o servidor' } as ApiError);
       } else {
         setError(null);
       }
     } catch (e: unknown) {
       if (canceladoRef.current) return;
+      console.error('Erro ao carregar dados:', e);
       const erroObj = tratarErro(e);
       setError(erroObj);
       setMembros([]);
@@ -73,25 +80,39 @@ export const useMembros = (projetoSelecionadoId: string | null, usuario: Usuario
   }, [projetoSelecionadoId, usuario]);
 
   useEffect(() => {
-    void carregarDados();
+    void carregarDados().catch(error => {
+      console.error('Erro ao carregar dados de membros:', error);
+      setError(tratarErro(error));
+    });
     return () => {
       canceladoRef.current = true;
     };
   }, [carregarDados]);
 
-  const membrosIds = new Set(membros.map(m => m.usuarioId));
-  const usuariosDisponiveis = usuarios.filter(u => !membrosIds.has(u.id));
+  const membrosIds = new Set(membros.map(m => m?.usuarioId).filter(Boolean));
+  const usuariosDisponiveis = usuarios.filter(u => u?.id && !membrosIds.has(u.id));
 
-  const membrosFiltrados = (busca: string) =>
-    membros.filter(m =>
-      [m.nome, m.email].some(v => v.toLowerCase().includes(busca.toLowerCase()))
-    );
+  const membrosFiltrados = (busca: string) => {
+    if (!Array.isArray(membros)) return [];
+    return membros.filter(m => {
+      if (!m) return false;
+      const nome = m.nome || '';
+      const email = m.email || '';
+      const termoBusca = (busca || '').toLowerCase();
+      return nome.toLowerCase().includes(termoBusca) || email.toLowerCase().includes(termoBusca);
+    });
+  };
 
   const membrosPaginaAtual = (busca: string) => {
-    const filtered = membrosFiltrados(busca);
-    const indexUltimo = paginaAtual * membrosPorPagina;
-    const indexPrimeiro = indexUltimo - membrosPorPagina;
-    return filtered.slice(indexPrimeiro, indexUltimo);
+    try {
+      const filtered = membrosFiltrados(busca);
+      const indexUltimo = paginaAtual * membrosPorPagina;
+      const indexPrimeiro = indexUltimo - membrosPorPagina;
+      return filtered.slice(indexPrimeiro, indexUltimo);
+    } catch (error) {
+      console.error('Erro ao paginar membros:', error);
+      return [];
+    }
   };
 
   const iniciarEdicao = () => {
@@ -137,6 +158,7 @@ export const useMembros = (projetoSelecionadoId: string | null, usuario: Usuario
       setLinhaEdicao(null);
       show({ tipo: 'sucesso', mensagem: 'Membro adicionado' });
     } catch (e: unknown) {
+      console.error('Erro ao salvar membro:', e);
       const erroObj = tratarErro(e);
       show({ tipo: 'erro', mensagem: erroObj.message });
     } finally {
@@ -145,7 +167,7 @@ export const useMembros = (projetoSelecionadoId: string | null, usuario: Usuario
   };
 
   const removerMembro = async (usuarioId: string) => {
-    if (!projetoSelecionadoId) return;
+    if (!projetoSelecionadoId || !usuarioId) return;
     setLoadingAcao(true);
 
     try {
@@ -153,6 +175,7 @@ export const useMembros = (projetoSelecionadoId: string | null, usuario: Usuario
       setMembros(prev => prev.filter(m => m.usuarioId !== usuarioId));
       show({ tipo: 'info', mensagem: 'Membro removido' });
     } catch (e: unknown) {
+      console.error('Erro ao remover membro:', e);
       const erroObj = tratarErro(e);
       show({ tipo: 'erro', mensagem: erroObj.message });
     } finally {

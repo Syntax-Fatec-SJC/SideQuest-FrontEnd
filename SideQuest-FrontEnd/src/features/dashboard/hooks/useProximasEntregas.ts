@@ -10,6 +10,15 @@ export function useProximasEntregas() {
   const [error, setError] = useState<ApiError | null>(null);
 
   const carregarDados = useCallback(async () => {
+    // Verificar se há token antes de fazer requisição
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
+      setEntregas([]);
+      setError(null);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 

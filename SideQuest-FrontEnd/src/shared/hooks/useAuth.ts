@@ -50,23 +50,19 @@ export function useAuth() {
   }, []);
 
   const logout = useCallback(async () => {
-    try {
-      await usuarioService.realizarLogout();
-    } catch (error) {
-      console.error('Erro ao fazer logout no servidor:', error);
-    } finally {
-      const chavesParaRemover = [
-        'usuarioLogado',
-        'usuario',
-        'usuarioSessao',
-        'usuarioId',
-        'projetoSelecionadoId',
-        'token',
-      ];
-      chavesParaRemover.forEach((chave) => localStorage.removeItem(chave));
-      ultimoUsuarioRef.current = null;
-      setUsuario(null);
-    }
+    // Não chamar o servidor - apenas limpar localStorage localmente
+    // O backend não possui endpoint /logout nos microserviços
+    const chavesParaRemover = [
+      'usuarioLogado',
+      'usuario',
+      'usuarioSessao',
+      'usuarioId',
+      'projetoSelecionadoId',
+      'token',
+    ];
+    chavesParaRemover.forEach((chave) => localStorage.removeItem(chave));
+    ultimoUsuarioRef.current = null;
+    setUsuario(null);
   }, []);
 
   useEffect(() => {
