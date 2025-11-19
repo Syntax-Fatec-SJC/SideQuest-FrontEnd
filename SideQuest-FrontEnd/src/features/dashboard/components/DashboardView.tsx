@@ -15,11 +15,13 @@ interface DashboardViewProps {
 
 export function DashboardView({ loading, erro, entregas, atualizacoes, dadosPizza, onTarefaClick }: DashboardViewProps) {
   return (
-    <div className="flex relative">
+    <div className="flex h-screen relative overflow-hidden">
       <Sidebar />
 
-      <div className="flex-1 mt-4 p-4 custom-scrollbar flex gap-4">
-        <div className="flex-1 flex flex-col gap-4  ">
+      {/* Container principal */}
+      <div className="flex-1 mt-4 p-2 sm:p-4 flex flex-col sm:flex-row gap-4 overflow-auto sm:overflow-visible custom-scrollbar">
+        {/* Coluna esquerda */}
+        <div className="flex-1 flex flex-col gap-4 min-w-0">
           {erro ? (
             <div className="flex-1 mt-4 p-4 flex flex-col justify-center items-center">
               <p className="text-xl mb-2 text-red-500">Erro ao carregar dashboard</p>
@@ -41,10 +43,13 @@ export function DashboardView({ loading, erro, entregas, atualizacoes, dadosPizz
             <CardEntrega entregas={entregas} onTarefaClick={onTarefaClick} />
           )}
         </div>
-        <div className="w-[400px] flex flex-col">
+
+        {/* Coluna direita */}
+        <div className="w-full sm:w-[400px] flex flex-col min-w-0 mb-15 sm:mb-0">
           <CardAtualizacao atualizacoes={atualizacoes} className="flex-1" />
         </div>
       </div>
     </div>
   );
 }
+

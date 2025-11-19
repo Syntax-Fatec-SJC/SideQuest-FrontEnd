@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { projetoService } from "../../../services/ProjetoService"; 
+import { projetoService } from "../../../services/ProjetoService";
 import { tratarErro } from "../../../shared/errors";
 import { useToast } from "../../../shared/hooks/useToast";
 import type { Projeto } from "../../../types/Projeto";
@@ -28,7 +28,7 @@ export function useProjetos() {
 
   const carregarProjetos = useCallback(async () => {
     canceladoRef.current = false;
-    
+
     // Verificar se há token antes de fazer requisição
     const token = localStorage.getItem("token");
     if (!token) {
@@ -49,9 +49,12 @@ export function useProjetos() {
 
       if (lista.length > 0) {
         const salvo = localStorage.getItem("projetoSelecionadoId");
-        const selecionado = salvo && lista.some(p => p.id === salvo) ? salvo : lista[0].id;
-        setProjetoSelecionadoId(selecionado);
-        localStorage.setItem("projetoSelecionadoId", selecionado);
+        if (salvo && lista.some(p => p.id === salvo)) {
+          setProjetoSelecionadoId(salvo);
+        } else {
+          setProjetoSelecionadoId(null); 
+          localStorage.removeItem("projetoSelecionadoId");
+        }
       }
     } catch (e: unknown) {
       if (canceladoRef.current) return;
