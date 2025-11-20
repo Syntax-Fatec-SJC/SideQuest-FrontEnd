@@ -34,7 +34,7 @@ export function CalendarioView({
     <div className="flex h-screen relative overflow-hidden">
       <Sidebar />
 
-      <main className="flex-1 flex flex-col bg-white rounded-3xl p-4 sm:p-8 mt-8 mb-20 sm:mb-8 mx-2 sm:mx-4">
+      <main className="flex-1 flex flex-col bg-white rounded-3xl px-0 sm:px-4 py-1 sm:py-8 mt-8 mb-20 sm:mb-8 mx-2 sm:mx-4">
         <ToastContainer />
 
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -57,33 +57,42 @@ export function CalendarioView({
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 mt-10 overflow-hidden rounded-xl shadow text-gray-500 text-center">
+        <div className="flex-1 min-h-0 min-w-0 mt-10 overflow-hidden rounded-xl shadow text-gray-500 text-center">
           {carregandoEventos ? (
             "Carregando calendário..."
           ) : (
-            <FullCalendar
-              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              initialView="dayGridMonth"
-              headerToolbar={{
-                left: "prev,next today",
-                center: "title",
-                right: "dayGridMonth,timeGridWeek,timeGridDay",
-              }}
-              buttonText={{
-                today: "Hoje",
-                month: "Mês",
-                week: "Semana",
-                day: "Dia",
-              }}
-              height="100%"
-              locale="pt-br"
-              events={eventos}
-              dayMaxEventRows={1}
-              moreLinkClick="popover"
-              moreLinkContent={(arg) => `+${arg.num} mais`}
-              contentHeight="auto"
-              displayEventTime={false}
-            />
+            <div className="w-full h-full overflow-x-auto px-0">
+              <FullCalendar
+                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                initialView="dayGridMonth"
+                headerToolbar={{
+                  left: "prev,next today",
+                  center: "title",
+                  right: "dayGridMonth,timeGridWeek,timeGridDay",
+                }}
+                buttonText={{
+                  today: "Hoje",
+                  month: "Mês",
+                  week: "Semana",
+                  day: "Dia",
+                }}
+                height="100%"
+                locale="pt-br"
+                events={eventos}
+                dayMaxEventRows={1}
+                moreLinkClick="popover"
+                moreLinkContent={(arg) => `+${arg.num} mais`}
+                contentHeight="auto"
+                displayEventTime={false}
+                titleFormat={{
+                  year: "numeric",
+                  month: window.innerWidth < 640 ? "short" : "long", 
+                }}
+              />
+
+            </div>
+
+
           )}
         </div>
       </main>

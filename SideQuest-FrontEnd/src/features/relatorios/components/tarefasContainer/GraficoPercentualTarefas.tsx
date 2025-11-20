@@ -37,7 +37,7 @@ const GraficoPercentualTarefas: React.FC<GraficoPercentualTarefasProps> = ({ tar
 
   return (
     <div className="flex flex-col items-center">
-      <h3 className="text-xl font-semibold text-gray-700 -mb-6">
+      <h3 className="text-xl font-semibold text-gray-700 -mb-0">
         Percentual de Conclusão do Projeto
       </h3>
       <div className="w-full h-[25rem] flex justify-center items-center overflow-hidden">

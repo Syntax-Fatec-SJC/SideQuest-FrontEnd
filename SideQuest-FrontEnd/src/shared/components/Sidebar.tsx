@@ -98,7 +98,7 @@ export default function Sidebar({ className }: SidebarProps) {
       {/* Menu inferior mobile */}
       <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-lg sm:hidden z-40">
         <div className="flex justify-around items-center h-16 px-2">
-          <Link to="/projetos" className="flex flex-col items-center text-xs">
+          <Link to="/dashboard" className="flex flex-col items-center text-xs">
             <MdOutlineDashboard size={24} />
             Dashboard
           </Link>
@@ -109,6 +109,10 @@ export default function Sidebar({ className }: SidebarProps) {
           <Link to="/avisos" className="flex flex-col items-center text-xs">
             <MdNotificationsNone size={24} />
             Avisos
+          </Link>
+          <Link to="/projetos" className="flex flex-col items-center text-xs">
+            <MdFolder size={24} />
+            Projetos
           </Link>
           <button onClick={() => setExpandido(!expandido)} className="flex flex-col items-center text-xs">
             {expandido ? <MdKeyboardArrowLeft size={24} /> : <MdKeyboardArrowRight size={24} />}
@@ -134,9 +138,18 @@ export default function Sidebar({ className }: SidebarProps) {
                 </Link>
               </>
             )}
+            <Link to="/lixeira" className="flex flex-col items-center text-xs">
+              <MdDelete size={24} />
+              Lixeira
+            </Link>
+            <Link to="/acesso" onClick={handleLogout} className="flex flex-col items-center text-xs">
+              <MdLogout size={24} />
+              Sair
+            </Link>
           </div>
         )}
       </div>
+
     </>
   );
 }
