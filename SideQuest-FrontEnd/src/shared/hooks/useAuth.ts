@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
-import { usuarioService } from '../../services/AuthService';
 
 export interface UsuarioSessao {
   id: string;

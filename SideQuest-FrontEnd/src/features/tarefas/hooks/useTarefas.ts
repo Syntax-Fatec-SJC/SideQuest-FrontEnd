@@ -88,10 +88,9 @@ export function useTarefas(usuario: UsuarioSessao | null) {
       } catch (e: unknown) {
         const erro = tratarErro(e);
         setError(erro);
-
-        if (!erro.message.includes("conectividade")) {
-          show({ tipo: "erro", mensagem: erro.message });
-        }
+        
+        // Sempre exibir o erro em um toast para o usuário
+        show({ tipo: "erro", mensagem: erro.message });
       }
     },
     [usuario, show]
@@ -110,10 +109,9 @@ export function useTarefas(usuario: UsuarioSessao | null) {
       } catch (e: unknown) {
         const erro = tratarErro(e);
         setError(erro);
-
-        if (!erro.message.includes("conectividade")) {
-          show({ tipo: "erro", mensagem: erro.message });
-        }
+        
+        // Sempre exibir o erro em um toast para o usuário
+        show({ tipo: "erro", mensagem: erro.message });
       }
     },
     [show]
@@ -144,10 +142,9 @@ export function useTarefas(usuario: UsuarioSessao | null) {
       } catch (e: unknown) {
         const erro = tratarErro(e);
         setError(erro);
-
-        if (!erro.message.includes("conectividade")) {
-          show({ tipo: "erro", mensagem: erro.message });
-        }
+        
+        // Sempre exibir o erro em um toast para o usuário
+        show({ tipo: "erro", mensagem: erro.message });
       }
     },
     [tarefas, usuario, show]
