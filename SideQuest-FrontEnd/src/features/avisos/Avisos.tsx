@@ -41,7 +41,7 @@ export default function Avisos() {
     } else if (aviso.projetoId) {
       navigate('/projetos');
     } else {
-      show({ tipo: 'atencao', mensagem: 'Este aviso não está vinculado a uma tarefa ou projeto.' });
+      show({ tipo: 'info', mensagem: 'Este aviso não está vinculado a uma tarefa ou projeto.' });
     }
   };
 
