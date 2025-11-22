@@ -14,6 +14,7 @@ interface TarefaPayload {
   status: Status;
   endDate?: string | Date | null;
   responsible?: string[];
+  comment?: string;
 }
 
 export function useTarefas(usuario: UsuarioSessao | null) {
@@ -41,7 +42,6 @@ export function useTarefas(usuario: UsuarioSessao | null) {
       const erro = tratarErro(e);
       setError(erro);
       setTarefas([]);
-      console.error("Erro ao carregar tarefas:", erro);
     }
 
     try {
@@ -51,7 +51,6 @@ export function useTarefas(usuario: UsuarioSessao | null) {
       const erro = tratarErro(e);
       setError(erro);
       setMembros([]);
-      console.error("Erro ao carregar membros:", erro);
     } finally {
       setLoading(false);
     }
@@ -64,7 +63,13 @@ export function useTarefas(usuario: UsuarioSessao | null) {
   }, [usuario, carregarDados]);
 
   const handleSave = useCallback(
-    async (tarefaId: string | null, data: TarefaPayload, onSuccess?: () => void) => {
+    async (
+      tarefaId: string | null,
+      data: TarefaPayload,
+      onSuccess?: () => void,
+      uploadAnexosFn?: (tarefaId: string) => Promise<any>,
+      deleteAnexosFn?: () => Promise<void>
+    ) => {
       const projetoId = localStorage.getItem("projetoSelecionadoId");
       if (!projetoId || !usuario) return;
 
@@ -75,14 +80,47 @@ export function useTarefas(usuario: UsuarioSessao | null) {
         prazoFinal: data.endDate ? new Date(data.endDate).toISOString() : null,
         projetoId,
         usuarioIds: data.responsible?.length ? data.responsible : [usuario.id],
+        comentario: data.comment || undefined,
       };
 
       try {
-        if (tarefaId) await tarefaService.atualizarTarefa(tarefaId, payload);
-        else await tarefaService.criarTarefa(payload);
+        let savedTarefaId: string | null = tarefaId;
 
+        // CRIAR OU ATUALIZAR TAREFA NO MONGODB
+        if (tarefaId) {
+          await tarefaService.atualizarTarefa(tarefaId, payload);
+        } else {
+          const novaTarefa = await tarefaService.criarTarefa(payload);
+          savedTarefaId = novaTarefa.id ?? null;
+        }
+
+        // DELETAR ANEXOS MARCADOS DO MONGODB
+        if (deleteAnexosFn) {
+          try {
+            await deleteAnexosFn();
+          } catch {
+            // Nao bloqueia o fluxo
+          }
+        }
+
+        // UPLOAD DE ANEXOS PENDENTES PARA MONGODB
+        if (savedTarefaId && uploadAnexosFn) {
+          try {
+            await uploadAnexosFn(savedTarefaId);
+          } catch {
+            // Nao bloqueia o fluxo
+          }
+        }
+
+        // Recarregar lista de tarefas
         const tarefasData = await tarefaService.listarTarefasDoProjeto(projetoId);
         setTarefas(tarefasData || []);
+
+        if (!tarefaId) {
+          show({ tipo: "sucesso", mensagem: "Parabens, voce criou uma tarefa!" });
+        } else {
+          show({ tipo: "sucesso", mensagem: "Tarefa atualizada com sucesso!" });
+        }
 
         onSuccess?.();
       } catch (e: unknown) {
@@ -106,6 +144,9 @@ export function useTarefas(usuario: UsuarioSessao | null) {
         await tarefaService.excluirTarefa(tarefaId);
         const tarefasData = await tarefaService.listarTarefasDoProjeto(projetoId);
         setTarefas(tarefasData || []);
+
+        show({ tipo: "erro", mensagem: "Voce acabou de deletar uma tarefa" });
+
         onSuccess?.();
       } catch (e: unknown) {
         const erro = tratarErro(e);
@@ -119,6 +160,7 @@ export function useTarefas(usuario: UsuarioSessao | null) {
     [show]
   );
 
+  // DRAG AND DROP - ATUALIZA STATUS NO MONGODB
   const onDragEnd = useCallback(
     async (result: DropResult) => {
       const projetoId = localStorage.getItem("projetoSelecionadoId");
@@ -127,9 +169,11 @@ export function useTarefas(usuario: UsuarioSessao | null) {
       const { draggableId, destination } = result;
       const novoStatus = destination.droppableId as Status;
       const tarefa = tarefas.find((t) => t.id === draggableId);
+
       if (!tarefa || tarefa.status === novoStatus) return;
 
       try {
+        // ATUALIZAR STATUS NO MONGODB
         await tarefaService.atualizarTarefa(draggableId, {
           nome: tarefa.nome,
           descricao: tarefa.descricao,
@@ -138,6 +182,8 @@ export function useTarefas(usuario: UsuarioSessao | null) {
           projetoId: tarefa.projetoId || projetoId,
           usuarioIds: tarefa.usuarioIds || [],
         });
+
+        // Atualizar estado local
         setTarefas((prev) =>
           prev.map((t) => (t.id === draggableId ? { ...t, status: novoStatus } : t))
         );
