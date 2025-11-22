@@ -38,7 +38,21 @@ export class ApiBase {
 
     if (!resp.ok) {
       const text = await resp.text().catch(() => "");
-      throw new ApiError({ codigo: resp.status, message: text || resp.statusText });
+      
+      // Tentar parsear JSON de erro
+      let errorMessage = text || resp.statusText;
+      let errorData: any = undefined;
+      
+      try {
+        errorData = JSON.parse(text);
+        // Verificar se há uma mensagem de erro do backend
+        errorMessage = errorData.erro || errorData.message || errorData.details || text || resp.statusText;
+      } catch (parseError) {
+        // Se não for JSON válido, usar o texto direto
+        errorMessage = text || resp.statusText;
+      }
+      
+      throw new ApiError({ codigo: resp.status, message: errorMessage, detalhes: errorData });
     }
 
     // Sem corpo
