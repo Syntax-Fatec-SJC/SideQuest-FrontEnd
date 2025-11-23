@@ -24,38 +24,74 @@ export function TarefasContainer() {
     [membros]
   );
 
+  const erroServidor = error && tarefas.length === 0 && membros.length === 0;
 
-const erroServidor = error && tarefas.length === 0 && membros.length === 0;
+  if (erroServidor) {
+    return (
+      <ConexaoPage
+        erroMensagem={error?.message}
+        onTentarNovamente={carregarDados}
+      />
+    );
+  }
 
-if (erroServidor) {
-  return (
-    <ConexaoPage
-      erroMensagem={error?.message}
-      onTentarNovamente={carregarDados}
-    />
-  );
-}
+  const handleOpenCreate = () => {
+    setEditarTarefa(null);
+    setIsModalOpen(true);
+  };
 
+  const handleOpenEdit = (tarefa: Tarefa) => {
+    setEditarTarefa(tarefa);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setEditarTarefa(null);
+    setIsModalOpen(false);
+  };
+
+  const handleSaveWithAnexos = async (
+    data: {
+      name: string;
+      description: string;
+      responsible: string[];
+      endDate: string;
+      status: "Pendente" | "Desenvolvimento" | "Concluído";
+      comment?: string;
+    },
+    uploadAnexosFn?: (tarefaId: string) => Promise<any>,
+    deleteAnexosFn?: () => Promise<void>
+  ) => {
+    await handleSave(
+      editarTarefa?.id ?? null,
+      data,
+      () => {
+        setEditarTarefa(null);
+        setIsModalOpen(false);
+      },
+      uploadAnexosFn,
+      deleteAnexosFn
+    );
+  };
+
+  const handleDeleteTarefa = async (id: string) => {
+    await handleDelete(id);
+    setEditarTarefa(null);
+    setIsModalOpen(false);
+  };
 
   return (
     <TarefasView
       tarefas={tarefas}
       membros={membrosUI}
       onDragEnd={onDragEnd as (result: DropResult<string>) => Promise<void>}
-      onOpenCreate={() => setIsModalOpen(true)}
-      onOpenEdit={(tarefa) => {
-        setEditarTarefa(tarefa);
-        setIsModalOpen(true);
-      }}
-      onSave={(data) => handleSave(editarTarefa?.id ?? null, data)}
-      onDelete={async (id) => {
-        await handleDelete(id);
-        setEditarTarefa(null);
-        setIsModalOpen(false);
-      }}
+      onOpenCreate={handleOpenCreate}
+      onOpenEdit={handleOpenEdit}
+      onSave={handleSaveWithAnexos}
+      onDelete={handleDeleteTarefa}
       editarTarefa={editarTarefa}
       isModalOpen={isModalOpen}
-      onCloseModal={() => setIsModalOpen(false)}
+      onCloseModal={handleCloseModal}
     />
   );
 }
