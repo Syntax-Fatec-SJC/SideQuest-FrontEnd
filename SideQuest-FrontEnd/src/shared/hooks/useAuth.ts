@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
-import { usuarioService } from '../../services/AuthService';
+import { useCallback, useEffect, useState, useRef } from 'react';
 
 export interface UsuarioSessao {
   id: string;
@@ -16,45 +15,58 @@ function lerUsuarioLocalStorage(): UsuarioSessao | null {
         const obj = JSON.parse(raw);
         if (obj && obj.id && obj.email) return obj;
       } catch {
+        // Ignora JSON inválido
       }
     }
   }
+
   const idDireto = localStorage.getItem('usuarioId');
   if (idDireto) {
     return { id: idDireto, nome: 'Usuário', email: '' };
   }
+
   return null;
 }
 
 export function useAuth() {
-  const [usuario, setUsuario] = useState<UsuarioSessao | null>(() => lerUsuarioLocalStorage());
+  const [usuario, setUsuario] = useState<UsuarioSessao | null>(() =>
+    lerUsuarioLocalStorage()
+  );
+
+  // Ref para evitar setUsuario redundante
+  const ultimoUsuarioRef = useRef<UsuarioSessao | null>(usuario);
 
   const refresh = useCallback(() => {
-    setUsuario(lerUsuarioLocalStorage());
+    const novoUsuario = lerUsuarioLocalStorage();
+    // Só atualiza se mudou
+    if (
+      novoUsuario?.id !== ultimoUsuarioRef.current?.id ||
+      novoUsuario?.email !== ultimoUsuarioRef.current?.email
+    ) {
+      ultimoUsuarioRef.current = novoUsuario;
+      setUsuario(novoUsuario);
+    }
   }, []);
 
   const logout = useCallback(async () => {
-    try {
-      // Chamar endpoint de logout para limpar o cookie httpOnly
-      await usuarioService.realizarLogout();
-    } catch (error) {
-      console.error('Erro ao fazer logout no servidor:', error);
-      // Continua limpando o localStorage mesmo se houver erro
-    }
-    
-    // Limpar localStorage
-    localStorage.removeItem('usuarioLogado');
-    localStorage.removeItem('usuario');
-    localStorage.removeItem('usuarioSessao');
-    localStorage.removeItem('usuarioId');
-    localStorage.removeItem('projetoSelecionadoId');
-    localStorage.removeItem('token'); // Limpar token JWT (fallback)
+    // Não chamar o servidor - apenas limpar localStorage localmente
+    // O backend não possui endpoint /logout nos microserviços
+    const chavesParaRemover = [
+      'usuarioLogado',
+      'usuario',
+      'usuarioSessao',
+      'usuarioId',
+      'projetoSelecionadoId',
+      'token',
+    ];
+    chavesParaRemover.forEach((chave) => localStorage.removeItem(chave));
+    ultimoUsuarioRef.current = null;
     setUsuario(null);
   }, []);
 
   useEffect(() => {
     const handler = (e: StorageEvent) => {
-      if (['usuarioLogado','usuario','usuarioSessao','usuarioId'].includes(e.key || '')) {
+      if (['usuarioLogado', 'usuario', 'usuarioSessao', 'usuarioId'].includes(e.key || '')) {
         refresh();
       }
     };

@@ -1,34 +1,42 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { dashboardService } from '../../../services/DashboardService';
 import type { Tarefa } from '../../../types/Tarefa';
-import { useToast } from '../../../shared/hooks/useToast';
+import { tratarErro } from '../../../shared/errors';
+import type { ApiError } from '../../../shared/errors/ApiError';
 
 export function useProximasEntregas() {
   const [entregas, setEntregas] = useState<Tarefa[]>([]);
   const [loading, setLoading] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
-  const { show } = useToast();
+  const [error, setError] = useState<ApiError | null>(null);
 
-  useEffect(() => {
-    async function carregarEntregas() {
-      setLoading(true);
-      setErro(null);
-
-      try {
-        const dados = await dashboardService.listarProximasEntregas();
-        setEntregas(dados);
-      } catch (error) {
-        const mensagem = error instanceof Error ? error.message : 'Erro ao carregar próximas entregas';
-        setErro(mensagem);
-        show({ mensagem, tipo: 'erro' });
-        console.error('Erro ao carregar entregas:', error);
-      } finally {
-        setLoading(false);
-      }
+  const carregarDados = useCallback(async () => {
+    // Verificar se há token antes de fazer requisição
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
+      setEntregas([]);
+      setError(null);
+      return;
     }
 
-    void carregarEntregas();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const dados = await dashboardService.listarProximasEntregas();
+      setEntregas(dados);
+    } catch (e: unknown) {
+      const erro = tratarErro(e);
+      setError(erro);
+      console.error('Erro ao carregar entregas:', erro);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  return { entregas, loading, erro };
+  useEffect(() => {
+    void carregarDados();
+  }, [carregarDados]);
+
+  return { entregas, loading, error, carregarDados };
 }

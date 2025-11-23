@@ -3,7 +3,7 @@ import type { Tarefa } from '../types/Tarefa';
 
 class DashboardService extends ApiBase {
   async listarProximasEntregas(): Promise<Tarefa[]> {
-    return this.get<Tarefa[]>('/tarefas/proximas-entregas');
+    return this.get<Tarefa[]>('/listar/tarefas/proximas-entregas');
   }
 }
 

@@ -50,7 +50,7 @@ const GraficoMembros: React.FC<GraficoMembrosProps> = ({
                 <BarChart
                   data={dadosFiltrados}
                   layout="vertical"
-                  margin={{ top: 10, right: 5, bottom: 10, left: 0 }}
+                  margin={{ top: 10, right: 5, bottom: 10, left: 5}}
                   barCategoryGap={espacamentoBarras}
                 >
                   <defs>
@@ -120,3 +120,4 @@ const GraficoMembros: React.FC<GraficoMembrosProps> = ({
 };
 
 export default GraficoMembros;
+

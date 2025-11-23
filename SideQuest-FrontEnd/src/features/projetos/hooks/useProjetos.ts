@@ -1,36 +1,40 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from 'react-router-dom';
-import { projetoService } from "../../../services/ProjetoService"; 
-import type { Projeto } from "../../../types/Projeto";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { projetoService } from "../../../services/ProjetoService";
 import { tratarErro } from "../../../shared/errors";
 import { useToast } from "../../../shared/hooks/useToast";
-import { obterUsuarioLogadoId } from "../utils/usuarioLogado";
-import { mensagensErro, mensagensSucesso } from "../utils/validacoes";
-import { useAuth } from '../../../shared/hooks/useAuth';
+import type { Projeto } from "../../../types/Projeto";
 
 export function useProjetos() {
   const navigate = useNavigate();
   const { show } = useToast();
+
   const [projetos, setProjetos] = useState<Projeto[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [projetoSelecionadoId, setProjetoSelecionadoId] = useState<string | null>(null);
-  const [creating] = useState<boolean>(false);
+  const [projetoSelecionadoId, setProjetoSelecionadoId] = useState<string | null>(
+    () => localStorage.getItem("projetoSelecionadoId")
+  );
   const [removendoId, setRemovendoId] = useState<string | null>(null);
-  const { usuario } = useAuth();
 
-  const usuarioLogadoId = obterUsuarioLogadoId();
+  const canceladoRef = useRef(false);
+  const ultimoErroRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    carregarProjetos();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [usuarioLogadoId]);
+  const isErroConectividade = (msg: string) => {
+    const texto = msg?.toLowerCase() || "";
+    return texto.includes("conectividade") || texto.includes("conexão") || texto.includes("failed to fetch");
+  };
 
-  async function carregarProjetos() {
-    if (!usuarioLogadoId) {
-      setErro(mensagensErro.sessaoInvalida);
+  const carregarProjetos = useCallback(async () => {
+    canceladoRef.current = false;
+
+    // Verificar se há token antes de fazer requisição
+    const token = localStorage.getItem("token");
+    if (!token) {
       setLoading(false);
+      setProjetos([]);
+      setErro(null);
       return;
     }
 
@@ -39,108 +43,141 @@ export function useProjetos() {
 
     try {
       const lista = await projetoService.listarProjetosDoUsuario();
+      if (canceladoRef.current) return;
+
       setProjetos(lista);
 
-      if (lista.length > 0 && !projetoSelecionadoId) {
+      if (lista.length > 0) {
         const salvo = localStorage.getItem("projetoSelecionadoId");
         if (salvo && lista.some(p => p.id === salvo)) {
           setProjetoSelecionadoId(salvo);
         } else {
-          setProjetoSelecionadoId(lista[0].id);
-          localStorage.setItem("projetoSelecionadoId", lista[0].id);
+          setProjetoSelecionadoId(null); 
+          localStorage.removeItem("projetoSelecionadoId");
         }
       }
     } catch (e: unknown) {
-      const erro = tratarErro(e);
-      const mensagemErro = erro.message || "Falha ao carregar projetos";
+      if (canceladoRef.current) return;
+
+      const erroObj = tratarErro(e);
+      const mensagemErro = erroObj.message || "Falha ao carregar projetos";
+
       setErro(mensagemErro);
-      show({ tipo: 'erro', mensagem: mensagemErro });
-    } finally {
-      setLoading(false);
-    }
-  }
 
-  const criarProjeto = async (form: { nome: string; prazo: string; descricao?: string }) => {
-    if (!usuario?.id) throw new Error('Usuário não autenticado');
-
-    // try to create on server and capture returned project if available
-    const created = await projetoService.criarProjeto(
-      { nome: form.nome, prazo: form.prazo, descricao: form.descricao },
-      usuario.id
-    );
-
-    // append a full Projeto object to the state (ensure required fields are present)
-    setProjetos(prev => {
-      const newId = created && (created as Partial<Projeto>).id ? (created as Projeto).id : (prev.length + 1).toString();
-      const novoProjeto: Projeto = {
-        id: newId,
-        nome: form.nome,
-        descricao: form.descricao,
-        prazo: form.prazo,
-        // provide sensible defaults if the service didn't return them
-        status: (created && (created as any).status) || 'ativo',
-        usuarioIds: (created && (created as any).usuarioIds) || [usuario.id],
-      };
-      const next = [...prev, novoProjeto];
-
-      // update selected projeto and persist selection
-      setProjetoSelecionadoId(novoProjeto.id);
-      localStorage.setItem("projetoSelecionadoId", novoProjeto.id);
-
-      return next;
-    });
-
-    setShowModal(false);
-    show({ tipo: 'sucesso', mensagem: mensagensSucesso.projetoCriado });
-  };
-
-  async function excluirProjeto(id: string, ev?: React.MouseEvent<HTMLButtonElement>) {
-    if (ev) ev.stopPropagation();
-    setRemovendoId(id);
-
-    try {
-      await projetoService.excluirProjeto(id);
-      setProjetos(prev => prev.filter(p => p.id !== id));
-      if (projetoSelecionadoId === id) {
-        setProjetoSelecionadoId(null);
-        localStorage.removeItem("projetoSelecionadoId");
+      if (!isErroConectividade(mensagemErro) && ultimoErroRef.current !== mensagemErro) {
+        show({ tipo: "erro", mensagem: mensagemErro });
+        ultimoErroRef.current = mensagemErro;
       }
-      show({ tipo: 'info', mensagem: mensagensSucesso.projetoRemovido });
-    } catch (e: unknown) {
-      const erro = tratarErro(e);
-      show({ tipo: 'erro', mensagem: erro.message || "Erro ao excluir projeto" });
     } finally {
-      setRemovendoId(null);
+      if (!canceladoRef.current) setLoading(false);
     }
-  }
+  }, [show]);
 
-  function selecionar(id: string) {
-    setProjetoSelecionadoId(id);
-    localStorage.setItem("projetoSelecionadoId", id);
-    navigate("/tarefas");
-  }
+  const criarProjeto = useCallback(
+    async (form: { nome: string; prazo: string; descricao?: string }, usuarioId: string) => {
+      canceladoRef.current = false;
 
-  function abrirModal() {
-    setShowModal(true);
-  }
+      try {
+        const resposta = await projetoService.criarProjeto(
+          { nome: form.nome, prazo: form.prazo, descricao: form.descricao },
+          usuarioId
+        );
+        if (canceladoRef.current) return;
 
-  function fecharModal() {
-    if (!creating) {
-      setShowModal(false);
-    }
-  }
+        let created: Partial<Projeto> | undefined;
+        if (resposta && typeof resposta === "object") {
+          created = resposta as Partial<Projeto>;
+        } else {
+          created = undefined;
+        }
+        const novoProjeto: Projeto = {
+          id: created?.id ?? (projetos.length + 1).toString(),
+          nome: form.nome,
+          descricao: form.descricao,
+          prazo: form.prazo,
+          status: created?.status ?? "ATIVO",
+          usuarioIds: created?.usuarioIds ?? [usuarioId],
+        };
+
+        setProjetos(prev => [...prev, novoProjeto]);
+        setProjetoSelecionadoId(novoProjeto.id);
+        localStorage.setItem("projetoSelecionadoId", novoProjeto.id);
+        setShowModal(false);
+
+        show({ tipo: "sucesso", mensagem: "Projeto criado com sucesso" });
+      } catch (e: unknown) {
+        if (canceladoRef.current) return;
+
+        const erroObj = tratarErro(e);
+        const mensagemErro = erroObj.message || "Erro ao criar projeto";
+
+        if (!isErroConectividade(mensagemErro) && ultimoErroRef.current !== mensagemErro) {
+          show({ tipo: "erro", mensagem: mensagemErro });
+          ultimoErroRef.current = mensagemErro;
+        }
+      }
+    },
+    [projetos.length, show]
+  );
+
+  const excluirProjeto = useCallback(
+    async (id: string, ev?: React.MouseEvent<HTMLButtonElement>) => {
+      if (ev) ev.stopPropagation();
+      canceladoRef.current = false;
+      setRemovendoId(id);
+
+      try {
+        await projetoService.excluirProjeto(id);
+        if (canceladoRef.current) return;
+
+        setProjetos(prev => prev.filter(p => p.id !== id));
+        if (projetoSelecionadoId === id) {
+          setProjetoSelecionadoId(null);
+          localStorage.removeItem("projetoSelecionadoId");
+        }
+
+        show({ tipo: "info", mensagem: "Projeto removido com sucesso" });
+      } catch (e: unknown) {
+        if (canceladoRef.current) return;
+
+        const erroObj = tratarErro(e);
+        const mensagemErro = erroObj.message || "Erro ao excluir projeto";
+
+        if (!isErroConectividade(mensagemErro) && ultimoErroRef.current !== mensagemErro) {
+          show({ tipo: "erro", mensagem: mensagemErro });
+          ultimoErroRef.current = mensagemErro;
+        }
+      } finally {
+        if (!canceladoRef.current) setRemovendoId(null);
+      }
+    },
+    [projetoSelecionadoId, show]
+  );
+
+  const selecionar = useCallback(
+    (id: string) => {
+      setProjetoSelecionadoId(id);
+      localStorage.setItem("projetoSelecionadoId", id);
+      navigate("/tarefas");
+    },
+    [navigate]
+  );
+
+  const abrirModal = useCallback(() => setShowModal(true), []);
+  const fecharModal = useCallback(() => setShowModal(false), []);
+
+  useEffect(() => {
+    carregarProjetos();
+    return () => { canceladoRef.current = true; };
+  }, [carregarProjetos]);
 
   return {
-    // Estados
     projetos,
     loading,
     erro,
     showModal,
     projetoSelecionadoId,
-    creating,
     removendoId,
-    
-    // Funções
     carregarProjetos,
     criarProjeto,
     excluirProjeto,

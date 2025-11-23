@@ -1,63 +1,75 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { UsuarioResumo } from "../../../types/Auth";
 import { usuarioService } from "../../../services/AuthService";
+import { useToast } from "../../../shared/hooks/useToast";
 import { obterUsuarioLogadoEmail } from "../utils/usuarioLogado";
-import { validacoesProjeto, mensagensErro, mensagensSucesso, type ShowToastFunction } from "../utils/validacoes";
 
-export function useUsuariosProjeto(showToast: ShowToastFunction) {
+export function useUsuariosProjeto() {
+  const { show } = useToast();
   const [usuariosAdicionados, setUsuariosAdicionados] = useState<UsuarioResumo[]>([]);
   const [emailDigitado, setEmailDigitado] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
 
-  const getUsuarioLogadoEmail = obterUsuarioLogadoEmail;
+  const ultimoErroRef = useRef<string | null>(null);
+  const canceladoRef = useRef(false);
 
-  const handleAddUsuario = async () => {
-    const email = emailDigitado.trim().toLowerCase();
+  const isErroConectividade = (msg: string) => {
+    const texto = msg?.toLowerCase() || "";
+    return texto.includes("conectividade") || texto.includes("conexão") || texto.includes("failed to fetch");
+  };
 
-    if (!validacoesProjeto.validarEmail(email, showToast)) {
+  const recarregar = useCallback(async () => {
+    canceladoRef.current = false;
+    
+    // Verificar se há token antes de fazer requisição
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
+      setUsuariosAdicionados([]);
+      setErro(null);
       return;
     }
 
-    const emailLogado = getUsuarioLogadoEmail();
-    if (emailLogado && email === emailLogado) {
-      showToast({ 
-        tipo: "info", 
-        mensagem: mensagensErro.criadorAutomatico
-      });
-      setEmailDigitado("");
-      return;
-    }
-
-    if (usuariosAdicionados.some((u) => u.email === email)) {
-      showToast({ tipo: "info", mensagem: mensagensErro.usuarioJaAdicionado });
-      setEmailDigitado("");
-      return;
-    }
+    setLoading(true);
+    setErro(null);
 
     try {
       const usuarios = await usuarioService.listarUsuarios();
-      const usuarioEncontrado = usuarios.find((u) => u.email === email);
+      if (canceladoRef.current) return;
 
-      if (!usuarioEncontrado) {
-        showToast({
-          tipo: "erro",
-          mensagem: mensagensErro.emailInvalido,
-        });
-      } else {
-        setUsuariosAdicionados((prev) => [...prev, usuarioEncontrado]);
-        showToast({ tipo: "sucesso", mensagem: mensagensSucesso.usuarioAdicionado });
+      const emailLogado = obterUsuarioLogadoEmail();
+      const filtrados = usuarios.filter(u => u.email !== emailLogado);
+      setUsuariosAdicionados(filtrados);
+      setErro(null);
+      ultimoErroRef.current = null;
+    } catch (e: unknown) {
+      if (canceladoRef.current) return;
+
+      const mensagemErro = (e as Error)?.message || "Falha ao carregar usuários";
+      setUsuariosAdicionados([]);
+      setErro(mensagemErro);
+
+      if (!isErroConectividade(mensagemErro) && ultimoErroRef.current !== mensagemErro) {
+        show({ tipo: "erro", mensagem: mensagemErro });
+        ultimoErroRef.current = mensagemErro;
       }
-
-      setEmailDigitado("");
-    } catch {
-      showToast({
-        tipo: "erro",
-        mensagem: mensagensErro.erroBuscarUsuario,
-      });
+    } finally {
+      if (!canceladoRef.current) setLoading(false);
     }
+  }, [show]);
+
+  useEffect(() => {
+    recarregar();
+    return () => { canceladoRef.current = true; };
+  }, [recarregar]);
+
+  const adicionarUsuario = (usuario: UsuarioResumo) => {
+    setUsuariosAdicionados(prev => [...prev, usuario]);
   };
 
-  const handleRemoveUsuario = (email: string) => {
-    setUsuariosAdicionados((prev) => prev.filter((u) => u.email !== email));
+  const removerUsuario = (email: string) => {
+    setUsuariosAdicionados(prev => prev.filter(u => u.email !== email));
   };
 
   const resetUsuarios = () => {
@@ -67,11 +79,13 @@ export function useUsuariosProjeto(showToast: ShowToastFunction) {
 
   return {
     usuariosAdicionados,
-    setUsuariosAdicionados,
     emailDigitado,
     setEmailDigitado,
-    handleAddUsuario,
-    handleRemoveUsuario,
+    loading,
+    erro,
+    recarregar,
+    adicionarUsuario,
+    removerUsuario,
     resetUsuarios,
   };
 }

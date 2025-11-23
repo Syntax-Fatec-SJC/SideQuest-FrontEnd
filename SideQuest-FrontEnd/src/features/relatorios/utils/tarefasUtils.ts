@@ -1,10 +1,7 @@
 import type { Tarefa } from "../../../types/Tarefa";
-// util temporario para calculo do percentual
 
 export const tarefasUtils = {
-  /**
-   * Calcula a porcentagem de tarefas concluídas
-   */
+
   calcularPorcentagemConcluidas: (tarefas: Tarefa[]): number => {
     const totalTarefas = tarefas.length;
     if (totalTarefas === 0) return 0;
@@ -13,16 +10,10 @@ export const tarefasUtils = {
     return Math.round((tarefasConcluidas / totalTarefas) * 100);
   },
 
-  /**
-   * Verifica se tem tarefas na lista
-   */
   temTarefas: (tarefas: Tarefa[]): boolean => {
     return tarefas.length > 0;
   },
 
-  /**
-   * Conta tarefas por status
-   */
   contarPorStatus: (tarefas: Tarefa[]) => {
     return {
       pendente: tarefas.filter(t => t.status === "Pendente").length,

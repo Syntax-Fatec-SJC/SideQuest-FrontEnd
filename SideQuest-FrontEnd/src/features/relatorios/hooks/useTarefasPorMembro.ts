@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { tarefaService } from "../../../services/TarefaService";
 import { membrosService } from "../../../services/MembrosService";
 import { useToast } from "../../../shared/hooks/useToast";
-import { tratarErro } from "../../../shared/errors";
+import { tratarErro } from "../../../shared/errors/index";
 import { mensagensErro } from "../utils/mensagens";
 import type { Tarefa } from "../../../types/Tarefa";
 import type { MembroProjeto } from "../../../types/Membro";
@@ -16,54 +16,77 @@ export function useTarefasPorMembro(projetoId: string, limiteTop = 3) {
   const { show } = useToast();
   const [dados, setDados] = useState<TarefasMembro[]>([]);
   const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!projetoId) return;
+  const ultimoErroRef = useRef<string | null>(null);
+  const canceladoRef = useRef(false);
 
-    async function carregarDados() {
-      setLoading(true);
-      try {
-        const [membros, tarefas] = await Promise.all([
-          membrosService.listarMembrosProjeto(projetoId),
-          tarefaService.listarTarefasDoProjeto(projetoId),
-        ]);
-
-        // Filtra apenas tarefas concluídas
-        const tarefasConcluidas = tarefas.filter(
-          (t: Tarefa) => t.status === "Concluído"
-        );
-
-        // Conta quantas tarefas cada membro concluiu
-        const resultado: TarefasMembro[] = membros.map((m: MembroProjeto) => {
-          const quantidade = tarefasConcluidas.filter((t: Tarefa) =>
-            t.usuarioIds?.includes(m.usuarioId)
-          ).length;
-
-          return {
-            nome: m.nome,
-            tarefasConcluidas: quantidade,
-          };
-        });
-
-        // Ordena do maior pro menor e pega só os top 3
-        const topMembros = resultado
-          .filter((m) => m.tarefasConcluidas > 0)
-          .sort((a, b) => b.tarefasConcluidas - a.tarefasConcluidas)
-          .slice(0, limiteTop);
-
-        setDados(topMembros);
-      } catch (e: unknown) {
-        const erro = tratarErro(e);
-        const mensagemErro = erro.message || mensagensErro.carregarMembros;
-        setDados([]);
-        show({ tipo: 'erro', mensagem: mensagemErro });
-      } finally {
-        setLoading(false);
-      }
+  const recarregar = useCallback(async () => {
+    if (!projetoId) {
+      setDados([]);
+      setLoading(false);
+      setErro(null);
+      return;
     }
 
-    carregarDados();
+    canceladoRef.current = false;
+    setLoading(true);
+    setErro(null);
+
+    try {
+      const [membros, tarefas] = await Promise.all([
+        membrosService.listarMembrosProjeto(projetoId),
+        tarefaService.listarTarefasDoProjeto(projetoId),
+      ]);
+
+      if (canceladoRef.current) return;
+
+      const tarefasConcluidas = tarefas.filter((t: Tarefa) => t.status === "Concluído");
+
+      const resultado: TarefasMembro[] = membros.map((m: MembroProjeto) => ({
+        nome: m.nome,
+        tarefasConcluidas: tarefasConcluidas.filter((t) =>
+          t.usuarioIds?.includes(m.usuarioId)
+        ).length,
+      }));
+
+      const topMembros = resultado
+        .filter((m) => m.tarefasConcluidas > 0)
+        .sort((a, b) => b.tarefasConcluidas - a.tarefasConcluidas)
+        .slice(0, limiteTop);
+
+      setDados(topMembros);
+      setErro(null);
+      ultimoErroRef.current = null;
+    } catch (e: unknown) {
+      if (canceladoRef.current) return;
+
+      const erroObj = tratarErro(e);
+      const mensagemErro = erroObj.message || mensagensErro.carregarMembros;
+
+      setDados([]);
+      setErro(mensagemErro);
+
+      const isConectividadeError =
+        mensagemErro.toLowerCase().includes("conectividade") ||
+        mensagemErro.toLowerCase().includes("conexão");
+
+      // Só mostra toast se não for erro de conectividade
+      if (!isConectividadeError && ultimoErroRef.current !== mensagemErro) {
+        show({ tipo: "erro", mensagem: mensagemErro });
+        ultimoErroRef.current = mensagemErro;
+      }
+    } finally {
+      if (!canceladoRef.current) setLoading(false);
+    }
   }, [projetoId, limiteTop, show]);
 
-  return { dados, loading };
+  useEffect(() => {
+    recarregar();
+    return () => {
+      canceladoRef.current = true;
+    };
+  }, [recarregar]);
+
+  return { dados, loading, erro, recarregar }; // ⚡ permite "Tentar Novamente"
 }

@@ -4,7 +4,7 @@ import type { Projeto, StatusProjeto } from '../types/Projeto';
 
 class ProjetoService extends ApiBase {
   async listarProjetosDoUsuario(): Promise<Projeto[]> {
-    return this.get<Projeto[]>('/projetos/meus');
+    return this.get<Projeto[]>('/listar/projetos/meus');
   }
 
   async criarProjeto(

@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardView } from "../components/DashboardView";
+import { ConexaoPage } from "../../../shared/components/ConexaoPage";
 import type { PizzaItem, EntregaItem, AtualizacaoItem } from "../../../types/Dashboard";
 import { useProximasEntregas } from "../hooks/useProximasEntregas";
-import useAuth from "../../../shared/hooks/useAuth";
-import type { Tarefa } from "../../../types/Tarefa";
 import { projetoService } from "../../../services/ProjetoService";
 import { membrosService } from "../../../services/MembrosService";
+import { tarefaService } from "../../../services/TarefaService";
+import type { Tarefa } from "../../../types/Tarefa";
 
 type ProjetoContextReturn = {
   setProjetoSelecionadoId: (id: string) => void;
@@ -19,6 +20,7 @@ const useProjeto = (): ProjetoContextReturn => {
         localStorage.setItem("projetoSelecionadoId", id);
       }
     } catch {
+      // erro ignorado
     }
   };
   return { setProjetoSelecionadoId };
@@ -30,38 +32,78 @@ type Membro = {
 };
 
 export function DashboardContainer() {
-  const { usuario } = useAuth();
   const navigate = useNavigate();
   const { setProjetoSelecionadoId } = useProjeto();
-  const { entregas: entregasBackend, loading: loadingEntregas, erro: erroEntregas } = useProximasEntregas();
+  const { entregas: entregasBackend, error, carregarDados } = useProximasEntregas();
   const [membrosTodosProjetos, setMembrosTodosProjetos] = useState<Membro[]>([]);
+  const [dadosPizza, setDadosPizza] = useState<PizzaItem[]>([
+    { chave: "Pendentes", valor: 0 },
+    { chave: "Em Desenvolvimento", valor: 0 },
+    { chave: "Concluidas", valor: 0 },
+  ]);
+  const [loadingGrafico, setLoadingGrafico] = useState(true);
 
   useEffect(() => {
-    async function carregarTodosOsMembros() {
-      if (!usuario?.id) return;
-
+    async function carregarMembrosETarefas() {
       try {
+        setLoadingGrafico(true);
+        const usuarioId = localStorage.getItem("usuarioId"); 
         const projetos = await projetoService.listarProjetosDoUsuario();
-        const promessasMembros = projetos.map(p => membrosService.listarMembrosProjeto(p.id.toString()));
+
+        const promessasMembros = projetos.map(p =>
+          membrosService.listarMembrosProjeto(p.id.toString())
+        );
         const listasDeMembros = await Promise.all(promessasMembros);
         const membrosFlat = listasDeMembros.flat();
         const membrosUnicos = Array.from(new Map(membrosFlat.map(m => [m.usuarioId, m])).values());
-        
         setMembrosTodosProjetos(membrosUnicos);
 
+        const promessasTarefas = projetos.map(p =>
+          tarefaService.listarTarefasDoProjeto(p.id.toString())
+        );
+        const listasDeTarefas = await Promise.all(promessasTarefas);
+        const todasTarefas = listasDeTarefas.flat();
+
+        const tarefasDoUsuario = usuarioId
+          ? todasTarefas.filter(t => (t.usuarioIds || []).includes(usuarioId))
+          : [];
+
+        let pendentes = 0;
+        let desenvolvimento = 0;
+        let concluidas = 0;
+
+        for (const t of tarefasDoUsuario) {
+          switch (t.status) {
+            case "Pendente":
+              pendentes++;
+              break;
+            case "Desenvolvimento":
+              desenvolvimento++;
+              break;
+            case "Concluído":
+              concluidas++;
+              break;
+          }
+        }
+
+        setDadosPizza([
+          { chave: "Pendentes", valor: pendentes },
+            { chave: "Em Desenvolvimento", valor: desenvolvimento },
+          { chave: "Concluidas", valor: concluidas },
+        ]);
       } catch (e) {
-        console.error('Erro ao carregar membros para o dashboard', e);
-        setMembrosTodosProjetos([]);
+        console.error("Erro ao carregar dados do gráfico", e);
+        setDadosPizza([
+          { chave: "Pendentes", valor: 0 },
+          { chave: "Em Desenvolvimento", valor: 0 },
+          { chave: "Concluidas", valor: 0 },
+        ]);
+      } finally {
+        setLoadingGrafico(false);
       }
     }
-    void carregarTodosOsMembros();
-  }, [usuario?.id]);
-
-  const dadosPizza: PizzaItem[] = [
-    { chave: "Pendentes", valor: 5 },
-    { chave: "Em Desenvolvimento", valor: 8 },
-    { chave: "Concluidas", valor: 12 },
-  ];
+    void carregarMembrosETarefas();
+  }, []);
 
   const formatarData = (dataISO: string | Date | undefined): string => {
     if (!dataISO) return "Sem data";
@@ -80,15 +122,11 @@ export function DashboardContainer() {
       const nomes = ids
         .map(id => membrosTodosProjetos.find(m => m.usuarioId === id)?.nome || null)
         .filter(Boolean) as string[];
-      
+
       if (nomes.length > 0) {
-        if (nomes.length <= 2) {
-          responsavelLabel = nomes.join(', ');
-        } else {
-          const nomesVisiveis = nomes.slice(0, 2).join(', ');
-          const nomesOcultos = nomes.length - 2;
-          responsavelLabel = `${nomesVisiveis} (+${nomesOcultos})`;
-        }
+        responsavelLabel = nomes.length <= 2
+          ? nomes.join(', ')
+          : `${nomes.slice(0, 2).join(', ')} (+${nomes.length - 2})`;
       }
     }
 
@@ -102,10 +140,18 @@ export function DashboardContainer() {
   });
 
   const handleTarefaClick = (projetoId: string) => {
-    setProjetoSelecionadoId(projetoId); 
-    localStorage.setItem('projetoSelecionadoId', projetoId);
-    navigate('/tarefas'); 
+    setProjetoSelecionadoId(projetoId);
+    navigate('/tarefas');
   };
+
+  if (error) {
+    return (
+      <ConexaoPage
+        erroMensagem={error.message}
+        onTentarNovamente={carregarDados}
+      />
+    );
+  }
 
   const atualizacoes: AtualizacaoItem[] = [
     {
@@ -134,12 +180,10 @@ export function DashboardContainer() {
     }
   ];
 
-  const DashboardViewAny = DashboardView as any;
-
   return (
-    <DashboardViewAny
-      loading={loadingEntregas}
-      erro={erroEntregas}
+    <DashboardView
+      loading={loadingGrafico}
+      erro={null}
       entregas={entregas}
       atualizacoes={atualizacoes}
       dadosPizza={dadosPizza}
