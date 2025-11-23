@@ -16,7 +16,6 @@ export function MembrosContainer() {
 
   const hookResult = useMembros(projetoSelecionadoId, usuario);
 
-  // Verificação de segurança
   useEffect(() => {
     if (!hookResult) {
       console.error("useMembros retornou undefined");

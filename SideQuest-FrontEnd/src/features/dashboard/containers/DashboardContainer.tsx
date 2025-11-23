@@ -47,10 +47,9 @@ export function DashboardContainer() {
     async function carregarMembrosETarefas() {
       try {
         setLoadingGrafico(true);
-        const usuarioId = localStorage.getItem("usuarioId"); // Ajuste se usar outra chave
+        const usuarioId = localStorage.getItem("usuarioId"); 
         const projetos = await projetoService.listarProjetosDoUsuario();
 
-        // Carrega membros (já existia)
         const promessasMembros = projetos.map(p =>
           membrosService.listarMembrosProjeto(p.id.toString())
         );
@@ -59,19 +58,16 @@ export function DashboardContainer() {
         const membrosUnicos = Array.from(new Map(membrosFlat.map(m => [m.usuarioId, m])).values());
         setMembrosTodosProjetos(membrosUnicos);
 
-        // Carrega tarefas de todos os projetos
         const promessasTarefas = projetos.map(p =>
           tarefaService.listarTarefasDoProjeto(p.id.toString())
         );
         const listasDeTarefas = await Promise.all(promessasTarefas);
         const todasTarefas = listasDeTarefas.flat();
 
-        // Filtra tarefas ligadas ao usuário logado
         const tarefasDoUsuario = usuarioId
           ? todasTarefas.filter(t => (t.usuarioIds || []).includes(usuarioId))
           : [];
 
-        // Conta por status (Status: Pendente | Desenvolvimento | Concluído)
         let pendentes = 0;
         let desenvolvimento = 0;
         let concluidas = 0;
@@ -186,7 +182,7 @@ export function DashboardContainer() {
 
   return (
     <DashboardView
-      loading={loadingGrafico} // passa loading do gráfico
+      loading={loadingGrafico}
       erro={null}
       entregas={entregas}
       atualizacoes={atualizacoes}

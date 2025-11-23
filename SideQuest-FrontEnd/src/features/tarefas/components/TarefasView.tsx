@@ -5,7 +5,6 @@ import { FaCalendarAlt, FaRegUserCircle } from "react-icons/fa";
 import ModalTarefa from "../components/TarefaModal";
 import type { Tarefa, Status } from "../../../types/Tarefa";
 
-// ... (Interface TarefasViewProps permanece a mesma)
 interface TarefasViewProps {
   tarefas: Tarefa[];
   membros: { id: string; nome: string; email: string }[];
@@ -103,12 +102,6 @@ export function TarefasView({
 
           <div className="flex flex-col md:flex-row justify-center gap-4 w-full flex-1 min-h-0">
             {columns.map((col) => {
-              // REMOVIDO: O if com window.innerWidth que causava o bug
-              // if (window.innerWidth < 768 && colunaSelecionada !== col.id) return null;
-
-              // Lógica CSS:
-              // Se a coluna NÃO for a selecionada -> hidden (esconde no mobile)
-              // MAS se a tela for média ou maior (md:) -> flex (mostra sempre no desktop)
               const displayClasses =
                 colunaSelecionada === col.id ? "flex" : "hidden md:flex";
 

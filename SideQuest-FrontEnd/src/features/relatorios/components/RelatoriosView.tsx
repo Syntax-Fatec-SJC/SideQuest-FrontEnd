@@ -39,7 +39,7 @@ export function RelatoriosView({
   }
 
   return (
-    <div className="flex h-full md:h-screen relative">
+    <div className="flex h-full relative">
       <Sidebar />
       <div className="flex-1 mx-2 sm:mx-4 mt-8 mb-20 sm:mb-8 custom-scrollbar flex flex-col justify-start items-stretch gap-4 sm:gap-8 p-2 sm:p-1">
         {/* Gráfico de Tarefas*/}

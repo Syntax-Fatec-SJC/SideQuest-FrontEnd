@@ -18,7 +18,6 @@ const GraficoTarefas: React.FC<GraficoStatusProps> = ({ tarefas }) => {
   const temTarefas = tarefasUtils.temTarefas(tarefas);
   const statusCounts = tarefasUtils.contarPorStatus(tarefas);
   
-  // === 1. Adicionando a lógica de detecção de Mobile ===
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -26,11 +25,11 @@ const GraficoTarefas: React.FC<GraficoStatusProps> = ({ tarefas }) => {
       setIsMobile(window.innerWidth < 768);
     };
 
-    handleResize(); // Executa na montagem
+    handleResize(); 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-  // ====================================================
+
 
   const dados = [
     { name: "Pendente", value: statusCounts.pendente },
@@ -51,7 +50,6 @@ const GraficoTarefas: React.FC<GraficoStatusProps> = ({ tarefas }) => {
   }
 
   return (
-    // Ajustei a altura para ser um pouco mais flexível em mobile se necessário
     <div className="w-full h-[22rem] md:h-92 flex justify-center items-center">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
@@ -59,22 +57,13 @@ const GraficoTarefas: React.FC<GraficoStatusProps> = ({ tarefas }) => {
             data={dados}
             dataKey="value"
             nameKey="name"
-            
-            // === 2. Lógica Dinâmica ===
-            // Mobile: Centralizado (50%)
-            // Desktop: Levemente à direita (55%) - Seu valor original
-            cx={isMobile ? "50%" : "55%"}
-            
+            cx={isMobile ? "50%" : "55%"}            
             cy="50%"
-            
-            // Mobile: 55% do tamanho (Deixa espaço para as labels externas não cortarem)
-            // Desktop: 140px fixo - Seu valor original
             outerRadius={isMobile ? "55%" : 140} 
             
-            // Ajustei o label para sumir se a tela for MUITO pequena, ou manter normal
             label={isMobile ? 
-              (entry) => `${entry.value}` // Mobile: Mostra só o número para economizar espaço
-              : (entry) => `${entry.name}: ${entry.value}` // Desktop: Completo
+              (entry) => `${entry.value}`
+              : (entry) => `${entry.name}: ${entry.value}` 
             }
           >
             {dados.map((entry) => (
