@@ -37,7 +37,8 @@ const TIPOS_PERMITIDOS = [
 
 const MAX_FILE_SIZE = 200 * 1024 * 1024;
 
-function determinarTipo(contentType: string): "image" | "pdf" | "video" {
+function determinarTipo(contentType: string | undefined): "image" | "pdf" | "video" {
+  if (!contentType) return "image";
   if (contentType.startsWith("image/")) return "image";
   if (contentType === "application/pdf") return "pdf";
   if (contentType.startsWith("video/")) return "video";
@@ -126,6 +127,7 @@ export function useModalTarefa({ initialData, isOpen, onClose }: UseModalTarefaP
         setLoadingAnexos(true);
 
         try {
+          // ✅ CORRIGIDO: listarAnexos retorna ARRAY DIRETO
           const response = await anexoService.listarAnexos(initialData.id);
 
           // Verificar se o componente ainda está montado
@@ -136,12 +138,15 @@ export function useModalTarefa({ initialData, isOpen, onClose }: UseModalTarefaP
 
           console.log("[useModalTarefa] Resposta:", response);
 
+          // ✅ CORRIGIDO: response JÁ É ARRAY
+          const lista = Array.isArray(response) ? response : [];
+
           // Mapear anexos - SEM badge "Novo"
-          const anexosCarregados: AnexoLocal[] = response.arquivos.map((a) => ({
+          const anexosCarregados: AnexoLocal[] = lista.map((a: any) => ({
             id: a.id,
             nome: a.nome,
-            tipo: (a.tipo || "image") as "image" | "pdf" | "video",
-            tamanho: a.tamanho,
+            tipo: determinarTipo(a.contentType || a.tipo) as "image" | "pdf" | "video",
+            tamanho: a.tamanho || formatarTamanho(a.size || 0),
             dataUpload: a.dataUpload,
             isNew: false,    // SEM badge "Novo"
             isSaved: true,   // Ja esta no banco
@@ -151,10 +156,10 @@ export function useModalTarefa({ initialData, isOpen, onClose }: UseModalTarefaP
           anexosCarregados.forEach(a => console.log("  ->", a.nome, "ID:", a.id));
 
           setAnexos(anexosCarregados);
-          console.log("[useModalTarefa] SUCESSO!");
+          console.log("[useModalTarefa] ✅ SUCESSO!");
 
         } catch (error: any) {
-          console.error("[useModalTarefa] ERRO:", error.message);
+          console.error("[useModalTarefa] ❌ ERRO:", error.message);
           // Em caso de erro, não travar - apenas mostrar lista vazia
           if (isMounted) {
             setAnexos([]);
@@ -308,6 +313,13 @@ export function useModalTarefa({ initialData, isOpen, onClose }: UseModalTarefaP
 
       console.log("[useModalTarefa] Upload concluido:", response);
 
+      // ✅ CORRIGIDO: Extrair array de arquivos da resposta
+      const arquivosRetornados = Array.isArray(response.arquivos)
+        ? response.arquivos
+        : Array.isArray(response)
+          ? response
+          : [];
+
       // Limpar fila
       setAnexosParaUpload([]);
 
@@ -316,7 +328,7 @@ export function useModalTarefa({ initialData, isOpen, onClose }: UseModalTarefaP
         prev.map((a) => {
           if (!a.isSaved && a.file) {
             // Encontrar o ID retornado
-            const arquivo = response.arquivos.find((r) => r.nome === a.nome);
+            const arquivo = arquivosRetornados.find((r: any) => r.nome === a.nome);
             return {
               ...a,
               id: arquivo?.id,
@@ -350,9 +362,9 @@ export function useModalTarefa({ initialData, isOpen, onClose }: UseModalTarefaP
     for (const id of anexosParaDeletar) {
       try {
         await anexoService.excluirAnexo(id);
-        console.log("  Deletado:", id);
+        console.log("  ✅ Deletado:", id);
       } catch (error) {
-        console.error("  Erro:", id);
+        console.error("  ❌ Erro:", id);
       }
     }
 
