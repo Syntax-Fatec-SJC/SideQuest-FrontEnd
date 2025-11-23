@@ -97,7 +97,7 @@ export function MembrosView({
           />
         )}
 
-        <div className="space-y-2">
+        <div className="space-y-2 overflow-auto">
           {membrosNaPagina.length === 0 ? (
             <div className="text-center text-gray-500">Nenhum membro.</div>
           ) : (

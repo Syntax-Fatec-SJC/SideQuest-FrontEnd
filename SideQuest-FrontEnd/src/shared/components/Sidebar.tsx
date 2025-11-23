@@ -90,7 +90,6 @@ export default function Sidebar({ className }: SidebarProps) {
         </div>
 
         <div className="flex flex-col gap-2 px-4 mb-3.5 mt-6">
-          <SidebarLink icon={MdDelete} label="Lixeira" to="/lixeira" />
           <SidebarLink icon={MdLogout} label="Sair" onClick={handleLogout} to="/acesso" />
         </div>
       </div>
@@ -138,10 +137,6 @@ export default function Sidebar({ className }: SidebarProps) {
                 </Link>
               </>
             )}
-            <Link to="/lixeira" className="flex flex-col items-center text-xs">
-              <MdDelete size={24} />
-              Lixeira
-            </Link>
             <Link to="/acesso" onClick={handleLogout} className="flex flex-col items-center text-xs">
               <MdLogout size={24} />
               Sair

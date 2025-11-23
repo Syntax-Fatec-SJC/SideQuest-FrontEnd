@@ -51,7 +51,7 @@ export function RelatoriosView({
           <GraficoTarefasContainer tarefas={tarefas} />
         )}
         {/* gráfico de membros */}
-        <div className="flex-1  custom-scrollbar flex gap-4 w-full">
+        <div className="flex-1 custom-scrollbar flex gap-4 w-full">
           {membrosLoading ? (
             <p className="text-center text-gray-500">{mensagensInfo.carregandoMembros}</p>
           ) : (

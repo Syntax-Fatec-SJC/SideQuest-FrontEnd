@@ -15,7 +15,7 @@ interface DashboardViewProps {
 
 export function DashboardView({ loading, erro, entregas, atualizacoes, dadosPizza, onTarefaClick }: DashboardViewProps) {
   return (
-    <div className="flex h-screen relative overflow-hidden">
+    <div className="flex h-screen relative overflow-hidden mb-15 md:mb-0">
       <Sidebar />
 
       {/* Container principal */}
@@ -45,9 +45,9 @@ export function DashboardView({ loading, erro, entregas, atualizacoes, dadosPizz
         </div>
 
         {/* Coluna direita */}
-        <div className="w-full sm:w-[400px] flex flex-col min-w-0 mb-15 sm:mb-0">
+        {/* <div className="w-full sm:w-[400px] flex flex-col min-w-0 mb-15 sm:mb-0">
           <CardAtualizacao atualizacoes={atualizacoes} className="flex-1" />
-        </div>
+        </div> */}
       </div>
     </div>
   );
