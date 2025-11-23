@@ -2,7 +2,7 @@
 // ========================================
 // IMPORTAÇÕES
 // ========================================
-import anexoApi from './anexoApi';  // ✅ API específica para anexo-service (porta 8087)
+import anexoApi from './anexoApi';
 
 // ========================================
 // INTERFACES
@@ -46,7 +46,7 @@ class AnexoService {
      */
     async uploadAnexos(tarefaId: string, files: File[]): Promise<AnexoUploadResponse> {
         console.log('===========================================');
-        console.log('[AnexoService] 🔄 UPLOAD');
+        console.log('[AnexoService]  UPLOAD');
         console.log('TarefaId:', tarefaId);
         console.log('Arquivos:', files.length);
         console.log('===========================================');
@@ -63,7 +63,7 @@ class AnexoService {
         });
 
         try {
-            // ✅ REQUISIÇÃO AXIOS → BACKEND (porta 8087)
+            //  REQUISIÇÃO AXIOS → BACKEND (porta 8087)
             const response = await anexoApi.post<AnexoUploadResponse>(
                 `${this.baseURL}/upload/${tarefaId}`,
                 formData,
@@ -73,11 +73,11 @@ class AnexoService {
                 }
             );
 
-            console.log('[AnexoService] ✅ Upload concluído');
-            console.log('[AnexoService] ✅ Enviados:', response.data.enviados);
+            console.log('[AnexoService]  Upload concluído');
+            console.log('[AnexoService]  Enviados:', response.data.enviados);
             return response.data;
         } catch (error: any) {
-            console.error('[AnexoService] ❌ Erro no upload:', error);
+            console.error('[AnexoService]  Erro no upload:', error);
 
             if (error.response) {
                 throw new Error(
@@ -98,16 +98,16 @@ class AnexoService {
      */
     async listarAnexos(tarefaId: string): Promise<AnexoInfo[]> {
         console.log('===========================================');
-        console.log('[AnexoService] 📥 LISTAR');
+        console.log('[AnexoService]  LISTAR');
         console.log('TarefaId:', tarefaId);
         console.log('===========================================');
 
         try {
-            // ✅ REQUISIÇÃO AXIOS → BACKEND (porta 8087)
+            //  REQUISIÇÃO AXIOS → BACKEND (porta 8087)
             const response = await anexoApi.get<AnexoInfo[]>(`${this.baseURL}/${tarefaId}`);
 
             const arquivos = Array.isArray(response.data) ? response.data : [];
-            console.log('[AnexoService] ✅ Anexos carregados:', arquivos.length);
+            console.log('[AnexoService]  Anexos carregados:', arquivos.length);
 
             arquivos.forEach((a, i) => {
                 console.log(`  ${i + 1}. ${a.nome} (ID: ${a.id})`);
@@ -115,11 +115,11 @@ class AnexoService {
 
             return arquivos;
         } catch (error: any) {
-            console.error('[AnexoService] ❌ Erro ao listar:', error);
+            console.error('[AnexoService]  Erro ao listar:', error);
 
             // Se 404 ou sem resposta → retornar array vazio (não travar a UI)
             if (error.response?.status === 404 || !error.response) {
-                console.log('[AnexoService] ℹ️ Nenhum anexo encontrado');
+                console.log('[AnexoService] ℹ Nenhum anexo encontrado');
                 return [];
             }
 
@@ -131,13 +131,13 @@ class AnexoService {
      * EXCLUIR: Deleta anexo do MongoDB
      */
     async excluirAnexo(anexoId: string): Promise<void> {
-        console.log('[AnexoService] 🗑️ Excluindo:', anexoId);
+        console.log('[AnexoService]  Excluindo:', anexoId);
 
         try {
             await anexoApi.delete(`${this.baseURL}/${anexoId}`);
-            console.log('[AnexoService] ✅ Anexo excluído');
+            console.log('[AnexoService]  Anexo excluído');
         } catch (error: any) {
-            console.error('[AnexoService] ❌ Erro ao excluir:', error);
+            console.error('[AnexoService]  Erro ao excluir:', error);
 
             if (error.response) {
                 throw new Error(
@@ -155,13 +155,13 @@ class AnexoService {
      * EXCLUIR TODOS: Deleta todos os anexos de uma tarefa
      */
     async excluirAnexosPorTarefa(tarefaId: string): Promise<void> {
-        console.log('[AnexoService] 🗑️ Excluindo todos os anexos da tarefa:', tarefaId);
+        console.log('[AnexoService]  Excluindo todos os anexos da tarefa:', tarefaId);
 
         try {
             await anexoApi.delete(`${this.baseURL}/tarefa/${tarefaId}`);
-            console.log('[AnexoService] ✅ Todos os anexos excluídos');
+            console.log('[AnexoService]  Todos os anexos excluídos');
         } catch (error: any) {
-            console.error('[AnexoService] ❌ Erro:', error);
+            console.error('[AnexoService]  Erro:', error);
             throw error;
         }
     }
@@ -170,14 +170,14 @@ class AnexoService {
      * DOWNLOAD: Busca anexo com dados Base64
      */
     async downloadAnexo(anexoId: string): Promise<AnexoDownloadResponse> {
-        console.log('[AnexoService] 📥 Download:', anexoId);
+        console.log('[AnexoService]  Download:', anexoId);
 
         try {
             const response = await anexoApi.get<AnexoDownloadResponse>(`${this.baseURL}/download/${anexoId}`);
-            console.log('[AnexoService] ✅ Download concluído');
+            console.log('[AnexoService]  Download concluído');
             return response.data;
         } catch (error: any) {
-            console.error('[AnexoService] ❌ Erro ao fazer download:', error);
+            console.error('[AnexoService]  Erro ao fazer download:', error);
             throw error;
         }
     }
@@ -187,7 +187,7 @@ class AnexoService {
      */
     async baixarArquivo(anexoId: string, nomeArquivo: string): Promise<void> {
         try {
-            console.log('[AnexoService] 📥 Baixando:', nomeArquivo);
+            console.log('[AnexoService]  Baixando:', nomeArquivo);
 
             const anexo = await this.downloadAnexo(anexoId);
 
@@ -210,9 +210,9 @@ class AnexoService {
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
 
-            console.log('[AnexoService] ✅ Arquivo baixado');
+            console.log('[AnexoService]  Arquivo baixado');
         } catch (error) {
-            console.error('[AnexoService] ❌ Erro ao baixar:', error);
+            console.error('[AnexoService]  Erro ao baixar:', error);
             throw error;
         }
     }
@@ -230,10 +230,10 @@ class AnexoService {
     async healthCheck(): Promise<{ status: string; service: string }> {
         try {
             const response = await anexoApi.get<{ status: string; service: string }>(`${this.baseURL}/health`);
-            console.log('[AnexoService] ✅ Health:', response.data);
+            console.log('[AnexoService]  Health:', response.data);
             return response.data;
         } catch (error) {
-            console.error('[AnexoService] ❌ Health check falhou:', error);
+            console.error('[AnexoService]  Health check falhou:', error);
             throw error;
         }
     }

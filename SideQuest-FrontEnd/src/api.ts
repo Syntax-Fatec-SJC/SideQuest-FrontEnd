@@ -1,4 +1,3 @@
-// src/services/api.ts
 import axios from 'axios';
 
 // Esta API é para o seu serviço principal (ex: Tarefas) que pode estar na porta 8080
@@ -25,11 +24,11 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
     (response) => {
-        console.log(`[Axios] ✅ ${response.status} ${response.config.url}`);
+        console.log(`[Axios] ${response.status} ${response.config.url}`);
         return response;
     },
     (error) => {
-        console.error('[Axios] ❌', {
+        console.error('[Axios] ', {
             status: error.response?.status,
             url: error.config?.url,
             data: error.response?.data,

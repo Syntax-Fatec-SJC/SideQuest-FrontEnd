@@ -138,7 +138,7 @@ export function useModalTarefa({ initialData, isOpen, onClose }: UseModalTarefaP
 
           console.log("[useModalTarefa] Resposta:", response);
 
-          // ✅ CORRIGIDO: response JÁ É ARRAY
+
           const lista = Array.isArray(response) ? response : [];
 
           // Mapear anexos - SEM badge "Novo"
@@ -156,10 +156,10 @@ export function useModalTarefa({ initialData, isOpen, onClose }: UseModalTarefaP
           anexosCarregados.forEach(a => console.log("  ->", a.nome, "ID:", a.id));
 
           setAnexos(anexosCarregados);
-          console.log("[useModalTarefa] ✅ SUCESSO!");
+          console.log("[useModalTarefa]  SUCESSO!");
 
         } catch (error: any) {
-          console.error("[useModalTarefa] ❌ ERRO:", error.message);
+          console.error("[useModalTarefa]  ERRO:", error.message);
           // Em caso de erro, não travar - apenas mostrar lista vazia
           if (isMounted) {
             setAnexos([]);
@@ -313,7 +313,7 @@ export function useModalTarefa({ initialData, isOpen, onClose }: UseModalTarefaP
 
       console.log("[useModalTarefa] Upload concluido:", response);
 
-      // ✅ CORRIGIDO: Extrair array de arquivos da resposta
+
       const arquivosRetornados = Array.isArray(response.arquivos)
         ? response.arquivos
         : Array.isArray(response)
@@ -362,9 +362,9 @@ export function useModalTarefa({ initialData, isOpen, onClose }: UseModalTarefaP
     for (const id of anexosParaDeletar) {
       try {
         await anexoService.excluirAnexo(id);
-        console.log("  ✅ Deletado:", id);
+        console.log("   Deletado:", id);
       } catch (error) {
-        console.error("  ❌ Erro:", id);
+        console.error("   Erro:", id);
       }
     }
 
