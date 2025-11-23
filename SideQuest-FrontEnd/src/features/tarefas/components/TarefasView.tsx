@@ -58,14 +58,14 @@ export function TarefasView({
 
   const initialModalData = editarTarefa
     ? {
-      id: editarTarefa.id!,
-      name: editarTarefa.nome,
-      description: editarTarefa.descricao || "",
-      responsible: editarTarefa.usuarioIds || [],
-      endDate: editarTarefa.prazoFinal ? editarTarefa.prazoFinal.split("T")[0] : "",
-      status: editarTarefa.status as Status,
-      comment: editarTarefa.comentario || "",
-    }
+        id: editarTarefa.id!,
+        name: editarTarefa.nome,
+        description: editarTarefa.descricao || "",
+        responsible: editarTarefa.usuarioIds || [],
+        endDate: editarTarefa.prazoFinal ? editarTarefa.prazoFinal.split("T")[0] : "",
+        status: editarTarefa.status as Status,
+        comment: editarTarefa.comentario || "",
+      }
     : undefined;
 
   return (
@@ -73,12 +73,12 @@ export function TarefasView({
       <Sidebar />
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <main className="flex-1 flex flex-col bg-white rounded-3xl p-4 sm:p-8 mt-8 mb-20 sm:mb-8 mx-2 sm:mx-4">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold mb-6 text-center text-azul-escuro">
+        <main className="flex-1 flex flex-col bg-white rounded-3xl p-4 sm:p-8 mt-8 mb-20 sm:mb-8 mx-2 sm:mx-4 shadow-lg overflow-hidden md:overflow-visible">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold mb-6 text-center text-azul-escuro flex-shrink-0">
             TAREFAS DO PROJETO
           </h1>
 
-          <div className="md:hidden mb-4 flex items-center gap-2">
+          <div className="md:hidden mb-4 flex items-center gap-2 flex-shrink-0">
             <select
               value={colunaSelecionada}
               onChange={(e) => setColunaSelecionada(e.target.value)}
@@ -100,9 +100,10 @@ export function TarefasView({
             </button>
           </div>
 
-          <div className="flex flex-col md:flex-row justify-center gap-4 w-full flex-1">
+          <div className="flex flex-col md:flex-row justify-center gap-4 w-full flex-1 min-h-0">
             {columns.map((col) => {
-              if (window.innerWidth < 768 && colunaSelecionada !== col.id) return null;
+              const displayClasses =
+                colunaSelecionada === col.id ? "flex" : "hidden md:flex";
 
               return (
                 <Droppable key={col.id} droppableId={col.id}>
@@ -110,11 +111,13 @@ export function TarefasView({
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`flex flex-col flex-1 bg-[#F2EEE9] rounded-xl shadow-2xl overflow-y-auto max-h-[calc(94vh-12rem)] min-h-[calc(94vh-12rem)]
+                      className={`${displayClasses} flex-col flex-1 bg-[#F2EEE9] rounded-xl shadow-inner overflow-y-auto 
+                        h-full 
+                        md:h-auto md:max-h-[calc(94vh-12rem)] md:min-h-[calc(94vh-12rem)]
                         transition-colors ${snapshot.isDraggingOver ? "bg-blue-100" : ""}`}
                     >
                       <h5
-                        className={`flex justify-center mb-4 text-2xl font-mono sticky top-0 z-10 bg-[#F2EEE9] py-2 ${col.color}`}
+                        className={`flex justify-center mb-4 text-2xl font-mono sticky top-0 z-10 bg-[#F2EEE9] py-2 shadow-sm ${col.color}`}
                       >
                         {col.nome}
                       </h5>
@@ -132,10 +135,11 @@ export function TarefasView({
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className={`p-3 m-2 bg-white rounded-xl shadow cursor-pointer transition-all duration-200 relative ${snapshot.isDragging
-                                  ? "bg-blue-200 shadow-lg scale-105 rotate-1"
-                                  : "hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5"
-                                  }`}
+                                className={`p-3 m-2 bg-white rounded-xl shadow cursor-pointer transition-all duration-200 relative ${
+                                  snapshot.isDragging
+                                    ? "bg-blue-200 shadow-lg scale-105 rotate-1"
+                                    : "hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5"
+                                }`}
                                 onClick={() => onOpenEdit(tarefa)}
                               >
                                 <div className="flex flex-col justify-between">
@@ -181,7 +185,7 @@ export function TarefasView({
           </div>
 
           <div
-            className="hidden md:flex items-center justify-center bg-[#377CD4] w-full h-16 rounded-lg cursor-pointer mt-4 hover:bg-[#2a5fa0] transition-all duration-200 hover:shadow-lg hover:scale-[1.01]"
+            className="hidden md:flex flex-shrink-0 items-center justify-center bg-[#377CD4] w-full h-16 rounded-lg cursor-pointer mt-4 hover:bg-[#2a5fa0] transition-all duration-200 hover:shadow-lg hover:scale-[1.01]"
             onClick={onOpenCreate}
           >
             <h5 className="text-3xl text-white font-mono">Criar Tarefa</h5>

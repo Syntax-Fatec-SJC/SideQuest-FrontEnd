@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Label } from "recharts";
 import { tarefasUtils } from "../../utils/tarefasUtils";
 import { mensagensInfo } from "../../utils/mensagens";
@@ -9,12 +9,25 @@ interface GraficoPercentualTarefasProps {
 }
 
 const GraficoPercentualTarefas: React.FC<GraficoPercentualTarefasProps> = ({ tarefas }) => {
-  // Usar utilitários para lógica de negócio
   const porcentagem = tarefasUtils.calcularPorcentagemConcluidas(tarefas);
   const temTarefas = tarefasUtils.temTarefas(tarefas);
 
   const corConcluido = "#23c403ff";
   const corRestante = "#E5E7EB";
+
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize();
+
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const dados = [
     { name: "Concluído", value: porcentagem },
@@ -22,7 +35,6 @@ const GraficoPercentualTarefas: React.FC<GraficoPercentualTarefasProps> = ({ tar
     { name: "Restante2", value: 0.01 },
   ];
 
-  // Se não há tarefas, mostrar mensagem
   if (!temTarefas) {
     return (
       <div className="w-full h-[20rem] flex justify-center items-center overflow-hidden">
@@ -36,45 +48,56 @@ const GraficoPercentualTarefas: React.FC<GraficoPercentualTarefasProps> = ({ tar
   }
 
   return (
-    <div className="flex flex-col items-center">
-      <h3 className="text-xl font-semibold text-gray-700 -mb-0">
+    <div className="flex flex-col items-center w-full">
+      <h3 className="text-xl font-semibold text-gray-700 mb-4 text-center">
         Percentual de Conclusão do Projeto
       </h3>
-      <div className="w-full h-[25rem] flex justify-center items-center overflow-hidden">
+      
+      {/* Altura ajustada para mobile e desktop */}
+      <div className="w-full h-[18rem] md:h-[25rem] flex justify-center items-center overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={dados}
               startAngle={180}
               endAngle={0}
-              innerRadius={150}
-              outerRadius={180}
               dataKey="value"
-              cornerRadius={25}
+              cornerRadius={isMobile ? 10 : 25} 
               cx="50%"
-              cy="55%"
+              cy={isMobile ? "70%" : "55%"} 
+              innerRadius={isMobile ? "60%" : 150}
+              outerRadius={isMobile ? "80%" : 180}
+              
+              paddingAngle={0}
             >
               <Cell fill={corConcluido} />
               <Cell fill={corRestante} />
               <Cell fill={corRestante} />
+              
+              <Label
+                value={`${porcentagem}%`}
+                position="center"
+                // Mantém a fonte responsiva para evitar quebras
+                className="font-bold fill-gray-700"
+                style={{ 
+                  fontSize: isMobile ? "3rem" : "4rem", 
+                  fontWeight: "bold" 
+                }}
+              />
             </Pie>
-
-            <Label
-              value={`${porcentagem}%`}
-              position="center"
-              style={{ fontSize: "4rem", fontWeight: "bold" }}
-            />
           </PieChart>
         </ResponsiveContainer>
       </div>
-      <div className="flex justify-center gap-8 -mt-35">
+
+      {/* Margem responsiva para a legenda */}
+      <div className="flex justify-center gap-8 -mt-12 md:-mt-35 mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4" style={{ backgroundColor: corConcluido }}></div>
-          <span className="text-gray-600">Concluído</span>
+          <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: corConcluido }}></div>
+          <span className="text-gray-600 text-sm md:text-base">Concluído</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4" style={{ backgroundColor: corRestante }}></div>
-          <span className="text-gray-600">Em progresso</span>
+          <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: corRestante }}></div>
+          <span className="text-gray-600 text-sm md:text-base">Em progresso</span>
         </div>
       </div>
     </div>

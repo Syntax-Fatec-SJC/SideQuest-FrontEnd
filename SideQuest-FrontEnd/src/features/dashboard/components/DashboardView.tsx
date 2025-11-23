@@ -1,6 +1,5 @@
 import Sidebar from "../../../shared/components/Sidebar";
 import { CardEntrega } from "./CardEntrega";
-import { CardAtualizacao } from "./CardAtualizacao";
 import { GraficoPizzaTarefas } from "./GraficoPizzaTarefas";
 import type { AtualizacaoItem, EntregaItem, PizzaItem } from "../../../types/Dashboard";
 
@@ -13,9 +12,9 @@ interface DashboardViewProps {
   onTarefaClick: (projetoId: string) => void;
 }
 
-export function DashboardView({ loading, erro, entregas, atualizacoes, dadosPizza, onTarefaClick }: DashboardViewProps) {
+export function DashboardView({ loading, erro, entregas, dadosPizza, onTarefaClick }: DashboardViewProps) {
   return (
-    <div className="flex h-screen relative overflow-hidden">
+    <div className="flex h-screen relative overflow-hidden mb-15 md:mb-0">
       <Sidebar />
 
       {/* Container principal */}
@@ -45,9 +44,9 @@ export function DashboardView({ loading, erro, entregas, atualizacoes, dadosPizz
         </div>
 
         {/* Coluna direita */}
-        <div className="w-full sm:w-[400px] flex flex-col min-w-0 mb-15 sm:mb-0">
+        {/* <div className="w-full sm:w-[400px] flex flex-col min-w-0 mb-15 sm:mb-0">
           <CardAtualizacao atualizacoes={atualizacoes} className="flex-1" />
-        </div>
+        </div> */}
       </div>
     </div>
   );
