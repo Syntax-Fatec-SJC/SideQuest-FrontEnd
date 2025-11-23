@@ -6,6 +6,7 @@ import type { PizzaItem, EntregaItem, AtualizacaoItem } from "../../../types/Das
 import { useProximasEntregas } from "../hooks/useProximasEntregas";
 import { projetoService } from "../../../services/ProjetoService";
 import { membrosService } from "../../../services/MembrosService";
+import { tarefaService } from "../../../services/TarefaService";
 import type { Tarefa } from "../../../types/Tarefa";
 
 type ProjetoContextReturn = {
@@ -33,31 +34,80 @@ type Membro = {
 export function DashboardContainer() {
   const navigate = useNavigate();
   const { setProjetoSelecionadoId } = useProjeto();
-  const { entregas: entregasBackend, loading, error, carregarDados } = useProximasEntregas();
+  const { entregas: entregasBackend, error, carregarDados } = useProximasEntregas();
   const [membrosTodosProjetos, setMembrosTodosProjetos] = useState<Membro[]>([]);
+  const [dadosPizza, setDadosPizza] = useState<PizzaItem[]>([
+    { chave: "Pendentes", valor: 0 },
+    { chave: "Em Desenvolvimento", valor: 0 },
+    { chave: "Concluidas", valor: 0 },
+  ]);
+  const [loadingGrafico, setLoadingGrafico] = useState(true);
 
   useEffect(() => {
-    async function carregarTodosOsMembros() {
+    async function carregarMembrosETarefas() {
       try {
+        setLoadingGrafico(true);
+        const usuarioId = localStorage.getItem("usuarioId"); // Ajuste se usar outra chave
         const projetos = await projetoService.listarProjetosDoUsuario();
-        const promessasMembros = projetos.map(p => membrosService.listarMembrosProjeto(p.id.toString()));
+
+        // Carrega membros (já existia)
+        const promessasMembros = projetos.map(p =>
+          membrosService.listarMembrosProjeto(p.id.toString())
+        );
         const listasDeMembros = await Promise.all(promessasMembros);
         const membrosFlat = listasDeMembros.flat();
         const membrosUnicos = Array.from(new Map(membrosFlat.map(m => [m.usuarioId, m])).values());
         setMembrosTodosProjetos(membrosUnicos);
+
+        // Carrega tarefas de todos os projetos
+        const promessasTarefas = projetos.map(p =>
+          tarefaService.listarTarefasDoProjeto(p.id.toString())
+        );
+        const listasDeTarefas = await Promise.all(promessasTarefas);
+        const todasTarefas = listasDeTarefas.flat();
+
+        // Filtra tarefas ligadas ao usuário logado
+        const tarefasDoUsuario = usuarioId
+          ? todasTarefas.filter(t => (t.usuarioIds || []).includes(usuarioId))
+          : [];
+
+        // Conta por status (Status: Pendente | Desenvolvimento | Concluído)
+        let pendentes = 0;
+        let desenvolvimento = 0;
+        let concluidas = 0;
+
+        for (const t of tarefasDoUsuario) {
+          switch (t.status) {
+            case "Pendente":
+              pendentes++;
+              break;
+            case "Desenvolvimento":
+              desenvolvimento++;
+              break;
+            case "Concluído":
+              concluidas++;
+              break;
+          }
+        }
+
+        setDadosPizza([
+          { chave: "Pendentes", valor: pendentes },
+            { chave: "Em Desenvolvimento", valor: desenvolvimento },
+          { chave: "Concluidas", valor: concluidas },
+        ]);
       } catch (e) {
-        console.error('Erro ao carregar membros para o dashboard', e);
-        setMembrosTodosProjetos([]);
+        console.error("Erro ao carregar dados do gráfico", e);
+        setDadosPizza([
+          { chave: "Pendentes", valor: 0 },
+          { chave: "Em Desenvolvimento", valor: 0 },
+          { chave: "Concluidas", valor: 0 },
+        ]);
+      } finally {
+        setLoadingGrafico(false);
       }
     }
-    void carregarTodosOsMembros();
+    void carregarMembrosETarefas();
   }, []);
-
-  const dadosPizza: PizzaItem[] = [
-    { chave: "Pendentes", valor: 5 },
-    { chave: "Em Desenvolvimento", valor: 8 },
-    { chave: "Concluidas", valor: 12 },
-  ];
 
   const formatarData = (dataISO: string | Date | undefined): string => {
     if (!dataISO) return "Sem data";
@@ -136,8 +186,8 @@ export function DashboardContainer() {
 
   return (
     <DashboardView
-      loading={loading}
-      erro={null} 
+      loading={loadingGrafico} // passa loading do gráfico
+      erro={null}
       entregas={entregas}
       atualizacoes={atualizacoes}
       dadosPizza={dadosPizza}

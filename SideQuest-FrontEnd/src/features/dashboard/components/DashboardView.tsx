@@ -1,6 +1,5 @@
 import Sidebar from "../../../shared/components/Sidebar";
 import { CardEntrega } from "./CardEntrega";
-import { CardAtualizacao } from "./CardAtualizacao";
 import { GraficoPizzaTarefas } from "./GraficoPizzaTarefas";
 import type { AtualizacaoItem, EntregaItem, PizzaItem } from "../../../types/Dashboard";
 
@@ -13,7 +12,7 @@ interface DashboardViewProps {
   onTarefaClick: (projetoId: string) => void;
 }
 
-export function DashboardView({ loading, erro, entregas, atualizacoes, dadosPizza, onTarefaClick }: DashboardViewProps) {
+export function DashboardView({ loading, erro, entregas, dadosPizza, onTarefaClick }: DashboardViewProps) {
   return (
     <div className="flex h-screen relative overflow-hidden mb-15 md:mb-0">
       <Sidebar />
